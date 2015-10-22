@@ -1,0 +1,29 @@
+<launch>
+
+  <!-- GDB functionality -->
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+  <!-- Verbose mode -->
+  <arg name="verbose" default="false" />
+  <arg unless="$(arg verbose)" name="command_args" value="" />
+  <arg     if="$(arg verbose)" name="command_args" value="true" />
+  
+  <arg name="robot_name" default="nao" />
+  <arg name="test_step" default="0.0" />
+  <arg name="x_min" default="0.0" />
+  <arg name="x_max" default="0.0" />
+  <arg name="y_min" default="0.0" />
+  <arg name="y_max" default="0.0" />
+  <arg name="z_min" default="0.0" />
+  <arg name="z_max" default="0.0" />
+
+  <!-- Launch pick and place -->
+  <node name="moveit_simple_actions_nao" launch-prefix="$(arg launch_prefix)" pkg="moveit_simple_actions"
+  type="moveit_simple_actions" output="screen" args="$(arg command_args) --robot_name=$(arg robot_name) --test_step=$(arg test_step) --x_min=$(arg x_min) --x_max=$(arg x_max) --y_min=$(arg y_min) --y_max=$(arg y_max) --z_min=$(arg z_min) --z_max=$(arg z_max)">
+    <rosparam command="load" file="$(find nao_moveit_config)/config/kinematics.yaml"/>
+    <rosparam command="load" file="$(find moveit_simple_grasps)/config/nao_grasp_data.yaml"/>
+  </node>
+
+</launch>
