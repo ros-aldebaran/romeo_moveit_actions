@@ -33,7 +33,8 @@ namespace moveit_simple_actions
       saveStat_(true),
       base_frame("odom"),
       block_size(0.03),
-      block_size_r(0.13), //0.15
+      block_size_l(0.13), //0.15,
+      floor_to_base_height(-1.0), //was -0.9
       env_shown_(false),
       x_min_(x_min),
       x_max_(x_max),
@@ -46,7 +47,11 @@ namespace moveit_simple_actions
       pose_default_r(),
       objproc(&nh_priv_)
   {
-    pose_default.orientation.x = -1;
+    pose_default.orientation.x = -1; //0.0;
+    pose_default.orientation.y = 0.0;
+    pose_default.orientation.z = 0.0;
+    pose_default.orientation.w = 0.0;
+
     if (robot_name_ == "nao")
     {
       block_size = 0.01;
@@ -127,7 +132,7 @@ namespace moveit_simple_actions
 
     // Load the Robot Viz Tools for publishing to rviz
     visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools("odom"));
-    visual_tools_->setFloorToBaseHeight(-0.9);
+    visual_tools_->setFloorToBaseHeight(floor_to_base_height);
     visual_tools_->deleteAllMarkers();
     visual_tools_->removeAllCollisionObjects();
     visual_tools_->setMuted(false);
@@ -138,14 +143,13 @@ namespace moveit_simple_actions
     action_left = new Action(&nh_, visual_tools_, "left", robot_name_);
     action_right = new Action(&nh_, visual_tools_, "right", robot_name_);
 
-
-
     msg_obj_pose.header.frame_id = action_left->grasp_data_.base_link_;
     msg_obj_poses.header.frame_id = action_left->grasp_data_.base_link_;
 
     //Move the robots parts to init positions
     //if (promptUserQuestion("Should I move the head to look down?"))
       //action_left->poseHeadDown();
+    //action_left->poseHeadDown();
 
     //if (promptUserQuestion(("Should I move the "+action_left->end_eff+" to the initial pose?").c_str()))
     action_left->poseHandInit();
@@ -155,8 +159,10 @@ namespace moveit_simple_actions
 
     // Create the table
     if (robot_name_ == "romeo")
-    createEnvironment(visual_tools_);
-    env_shown_ = true;
+    {
+      createEnvironment(visual_tools_);
+      env_shown_ = true;
+    }
 
     printTutorial(robot_name);
 
@@ -180,7 +186,7 @@ namespace moveit_simple_actions
     if (verbose_)
       ROS_INFO_STREAM(" Generating goals in the target space");
 
-    MetaBlock block = MetaBlock("BlockTest", 0, 0, 0, -1.0, 0.0, 0.0, 0.0, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_r);
+    MetaBlock block = MetaBlock("BlockTest", 0, 0, 0, -1.0, 0.0, 0.0, 0.0, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_l);
 
     double y_step = test_step_*1.5;
     double y_min(y_min_), y_max(y_max_);
@@ -232,7 +238,7 @@ namespace moveit_simple_actions
       float x = 0.35f + float(rand() % 150)/1000.0f; //[0.35;0.50]
       float y = float(rand() % 90)/100.0f - 0.45; //[-0.45;0.45]
       float z = -0.23f + (float(rand() % 230)/1000.0f); //[-0.23;0.00]
-      blocks_test.push_back(MetaBlock("BlockTest", x, y, z, -1,0,0,0, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_r));
+      blocks_test.push_back(MetaBlock("BlockTest", x, y, z, -1,0,0,0, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_l));
       msg_poses.poses.push_back(blocks_test.back().start_pose);
       ++count;
     }
@@ -300,12 +306,12 @@ namespace moveit_simple_actions
       y_max = -y_min_;
     }
 
-    MetaBlock block = MetaBlock("BlockTest", 0, 0, 0, -1.0, 0.0, 0.0, 0.0, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_r);
+    MetaBlock block = MetaBlock("BlockTest", 0, 0, 0, -1.0, 0.0, 0.0, 0.0, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_l);
 
     int count_total = 0;
     for (double z=z_min_; z<=z_max_; z+=test_step_)
     {
-      updateTable(visual_tools_, 0.9+(z-block_size_r/2.0));
+      updateTable(visual_tools_, -floor_to_base_height + (z-block_size_l/2.0));
       for (double y=y_min; y<=y_max; y+=y_step)
         for (double x=x_min_; x<=x_max_; x+=test_step_)
         {
@@ -335,6 +341,7 @@ namespace moveit_simple_actions
             //std::cout << "----- reachable pose: " << block.start_pose.position.x << " " << block.start_pose.position.y << " " << block.start_pose.position.z << std::endl;
             msg_poses_validated.poses.push_back(block.start_pose);
             pub_obj_poses->publish(msg_poses_validated);
+            stat_poses_success.push_back(block.start_pose);
 
             //return the hand
             action->poseHandInit();
@@ -414,7 +421,7 @@ namespace moveit_simple_actions
     Action *action = action_left;
 
     //publish a virtual object
-    blocks.push_back(MetaBlock("Virtual1", ros::Time::now(), pose_default, shape_msgs::SolidPrimitive::CYLINDER, block_size));
+    blocks.push_back(MetaBlock("Virtual1", ros::Time::now(), pose_default, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_l));
     msg_obj_pose.pose = blocks.back().start_pose;
     pub_obj_pose.publish(msg_obj_pose);
     block_id = 0;
@@ -619,7 +626,7 @@ namespace moveit_simple_actions
         else if (actionName == "lb") //key 'lb' //clean objects and publish virtual cylinder on the left arm side
         {
           removeObjects();
-          blocks.push_back(MetaBlock("Virtual1", ros::Time::now(), pose_default, shape_msgs::SolidPrimitive::BOX, block_size));
+          blocks.push_back(MetaBlock("Virtual1", ros::Time::now(), pose_default, shape_msgs::SolidPrimitive::BOX, block_size, block_size_l));
           msg_obj_pose.pose = blocks.back().start_pose;
           pub_obj_pose.publish(msg_obj_pose);
           block_id = 0;
@@ -629,7 +636,7 @@ namespace moveit_simple_actions
         else if (actionName == "lc") //key 'c' //clean objects and publish virtual cylinder on the left arm side
         {
           removeObjects();
-          blocks.push_back(MetaBlock("Virtual1", ros::Time::now(), pose_default, shape_msgs::SolidPrimitive::CYLINDER, block_size));
+          blocks.push_back(MetaBlock("Virtual1", ros::Time::now(), pose_default, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_l));
           msg_obj_pose.pose = blocks.back().start_pose;
           pub_obj_pose.publish(msg_obj_pose);
           block_id = 0;
@@ -638,7 +645,7 @@ namespace moveit_simple_actions
         else if (actionName == "rc") //key 'r' //clean and publish virtual for the right arm
         {
           removeObjects();
-          blocks.push_back(MetaBlock("Virtual1", ros::Time(), pose_default_r, shape_msgs::SolidPrimitive::CYLINDER, block_size));
+          blocks.push_back(MetaBlock("Virtual1", ros::Time(), pose_default_r, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_l));
           msg_obj_pose.pose = blocks.back().start_pose;
           pub_obj_pose.publish(msg_obj_pose);
           block_id = 0;
@@ -712,6 +719,7 @@ namespace moveit_simple_actions
         //------------ reaching default poses
         else if ((block_id != -1) && ((actionDesired == 117) || (actionName == "u"))) //key 'u' //reach and grasp
         {
+          //clean object temporally or allow to touch it
           visual_tools_->cleanupCO(blocks[block_id].name);
 
           float dist = std::numeric_limits<float>::max();
@@ -916,12 +924,11 @@ namespace moveit_simple_actions
           action->poseHeadZero();
         else if (actionName == "stat") //key 'stat', print the statistics on grasps
         {
-            //stat_poses_success[0].position.x;
+          ROS_INFO_STREAM("Successfully grasped objects at the following locations: ");
           for (std::vector <geometry_msgs::Pose>::iterator it = stat_poses_success.begin(); it != stat_poses_success.end(); ++it)
           {
-            ROS_INFO_STREAM("Successfully grasped objects at the following locations: ");
             ROS_INFO_STREAM(" [" <<  it-> position.x << " " << it->position.y << " " << it->position.z << "] ["
-                            << it->orientation.x << " " << it->orientation.y << " " << it->orientation.z << " " << it->orientation.w);
+                            << it->orientation.x << " " << it->orientation.y << " " << it->orientation.z << " " << it->orientation.w << "]");
           }
         }
       }
@@ -974,7 +981,7 @@ namespace moveit_simple_actions
       msg_cylinder_.type = shape_msgs::SolidPrimitive::CYLINDER;
       msg_cylinder_.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
       msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CYLINDER_RADIUS] = block_size;
-      msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CONE_HEIGHT] = block_size_r; //block_size*
+      msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CONE_HEIGHT] = block_size_l;
 
       msg_obj_collision.primitives.push_back(msg_cylinder_);
       msg_obj_collision.primitive_poses.push_back(block->start_pose);
@@ -1003,7 +1010,7 @@ namespace moveit_simple_actions
     if (block->shape.type == shape_msgs::SolidPrimitive::BOX)
       visual_tools_->publishCollisionBlock(block->start_pose, block->name, block_size);
     else if (block->shape.type == shape_msgs::SolidPrimitive::CYLINDER)
-      visual_tools_->publishCollisionCylinder(block->start_pose, block->name, block_size, block_size_r);
+      visual_tools_->publishCollisionCylinder(block->start_pose, block->name, block_size, block_size_l);
   }
 
   void SimplePickPlace::getCollisionObjects(const moveit_msgs::CollisionObject::ConstPtr& msg)

@@ -62,11 +62,13 @@ MetaBlock::MetaBlock(const std::string name,
           const ros::Time timestamp,
           const geometry_msgs::Pose start_pose,
           const uint shapeType,
-          const double size)
+          const double size,
+          const double size_l)
 {
   this->name = name;
   this->timestamp = timestamp;
-  this->size = size*3.0;
+  this->size = size;
+  this->size_l = size_l;
 
   this->start_pose = start_pose;
 
@@ -87,7 +89,7 @@ MetaBlock::MetaBlock(const std::string name,
     shape_msgs::SolidPrimitive shapeCylinder;
     shapeCylinder.type = shape_msgs::SolidPrimitive::CYLINDER;
     shapeCylinder.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
-    shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_HEIGHT] = size*3;
+    shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_HEIGHT] = size_l;
     shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_RADIUS] = size;
     this->shape = shapeCylinder;
   }
@@ -98,7 +100,7 @@ MetaBlock::MetaBlock(const std::string name,
     shapeBox.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::BOX>::value);
     shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_X] = size;
     shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_Y] = size;
-    shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_Z] = size;
+    shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_Z] = size_l;
     this->shape = shapeBox;
   }
 }

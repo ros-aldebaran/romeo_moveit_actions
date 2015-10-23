@@ -9,6 +9,8 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
   verbose_(false),
   attempts_max_(3),
   planning_time_(30.0),
+  //planner_id_("RRTConnectkConfigDefault"),
+  tolerance_min_(0.01),
   arm(arm),
   end_eff(arm+"_hand"),
   plan_group(arm+"_arm"),
@@ -266,6 +268,9 @@ void Action::setTolerance(const double value)
 
 float Action::reachGrasp(MetaBlock *block, const std::string surface_name)
 {
+  //if (verbose_)
+    ROS_INFO_STREAM("Reaching at distance = " << block->start_pose.position.x << " " << block->start_pose.position.y << " " << block->start_pose.position.z);
+
   //clean object temporally or allow to touch it
   /*visual_tools_->cleanupCO(block->name);
   ros::Duration(1.0).sleep();*/
@@ -282,8 +287,11 @@ std::cout << "attach_object_msg.touch_links.size() " << attach_object_msg.touch_
   approach_grasp_acm->setEntry(goal.target_name, attach_object_msg.touch_links, true);
 */
 
+  geometry_msgs::Pose pose = block->start_pose;
+  pose.position.z += block->size_l/2.0;
+
   //reach the object
-  if (!reachPregrasp(block->start_pose, surface_name))
+  if (!reachPregrasp(pose, surface_name))
     return std::numeric_limits<float>::max();
 
   //compute the distance to teh object
@@ -424,12 +432,12 @@ std::vector<moveit_msgs::Grasp> Action::generateGrasps(MetaBlock *block)
     return grasps;
   }
 
-  /*if (verbose_)
-  {
+  if (verbose_)
     visual_tools_->deleteAllMarkers();
-  }*/
 
-  simple_grasps_->generateBlockGrasps(block->start_pose, grasp_data_, grasps );
+  geometry_msgs::Pose pose = block->start_pose;
+  pose.position.z += block->size_l/2.0;
+  simple_grasps_->generateBlockGrasps(pose, grasp_data_, grasps );
 
   if (verbose_)
   {
@@ -468,7 +476,11 @@ std::vector<geometry_msgs::Pose> Action::configureForPlanning(const std::vector<
   return targets;
 }
 
-bool Action::pickAction(MetaBlock *block, const std::string surface_name, int attempts_nbr, double planning_time)
+bool Action::pickAction(MetaBlock *block, 
+                        const std::string surface_name,
+                        int attempts_nbr,
+                        double planning_time,
+                        double tolerance_min)
 {
   bool success(false);
   //if (verbose_)
@@ -480,6 +492,9 @@ bool Action::pickAction(MetaBlock *block, const std::string surface_name, int at
   if (planning_time == 0.0)
     planning_time = planning_time_;
 
+  if (tolerance_min == 0.0)
+    tolerance_min = tolerance_min_;
+
   std::vector<moveit_msgs::Grasp> grasps = generateGrasps(block);
 
   if (grasps.size() > 0)
@@ -489,7 +504,8 @@ bool Action::pickAction(MetaBlock *block, const std::string surface_name, int at
       move_group_->setSupportSurfaceName(surface_name);
 
     move_group_->setPlanningTime(planning_time); //30.0);
-    move_group_->setPlannerId("RRTConnectkConfigDefault");
+    //move_group_->setPlannerId("RRTConnectkConfigDefault");
+    //move_group_->setPlannerId("RRTConnect");
 
     double tolerance_min = 0.01;
     double tolerance_max = 0.5;

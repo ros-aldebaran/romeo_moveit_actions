@@ -5,7 +5,7 @@
 
   void printTutorial(const std::string robot_name)//, const int state
   {
-    std::string key = "g";
+    std::string key = "u";
     //if (state == 0)
     //{
       std::cout <<
@@ -23,7 +23,7 @@
 
       if (robot_name == "romeo")
       {
-        key = "u";
+        key = "g";
         std::cout <<
                             "- a black table."
                             << std::endl;

@@ -27,7 +27,10 @@ public:
          moveit_visual_tools::MoveItVisualToolsPtr &visual_tools,
          const std::string arm_,
          const std::string robot_name);
-  bool pickAction(MetaBlock *block, const std::string surface_name, const int attempts_nbr=0, const double planning_time=0.0);
+  bool pickAction(MetaBlock *block, const std::string surface_name,
+                  const int attempts_nbr=0,
+                  const double planning_time=0.0,
+                  const double tolerance_min=0.0);
   bool placeAction(MetaBlock *block, const std::string surface_name);
   bool pickDefault(MetaBlock *block);
 
@@ -87,6 +90,7 @@ private:
   bool verbose_;
   int attempts_max_;
   double planning_time_;
+  double tolerance_min_;
 
   geometry_msgs::Pose pose_init;
 

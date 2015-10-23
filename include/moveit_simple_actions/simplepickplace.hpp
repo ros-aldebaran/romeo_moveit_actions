@@ -56,7 +56,8 @@ public:
   const bool saveStat_;
   std::string base_frame;
   double block_size;
-  double block_size_r;
+  double block_size_l;
+  double floor_to_base_height;
 
   bool env_shown_;
   double x_min_;

@@ -20,22 +20,26 @@ Posture::Posture(const std::string robot_name, const std::string eef_name, const
   moveit::planning_interface::MoveGroup move_group_plan(group_name);
   //get current
   move_group_plan.getCurrentState()->copyJointGroupPositions(move_group_plan.getCurrentState()->getRobotModel()->getJointModelGroup(move_group_plan.getName()), pose_arm_left_init);
-  if (pose_arm_left_init.size() >= 3)
+
+ROS_INFO_STREAM("pose_arm_left_init.size() "<< pose_arm_left_init.size());
+
+  if ((robot_name == "romeo") && (pose_arm_left_init.size() >= 6))
+  {
+    pose_arm_left_init[0] = 1.74;
+    pose_arm_left_init[1] = 0.75;
+    pose_arm_left_init[2] = -2.08;
+    pose_arm_left_init[3] = -1.15;
+    pose_arm_left_init[4] = -0.43;
+    pose_arm_left_init[5] = 0.17;
+    if (pose_arm_left_init.size() >= 7)
+      pose_arm_left_init[6] = 0.0;
+  }
+  else if (pose_arm_left_init.size() >= 3)
   {
     pose_arm_left_init[0] = 1.7;
     pose_arm_left_init[1] = 0.3;
     pose_arm_left_init[2] = -1.3;
     //pose_arm_left_init[3] = -0.1;
-  }
-
-  if ((robot_name == "romeo") && (pose_arm_left_init.size() >= 6))
-  {
-    pose_arm_left_init[0] = 1.74;
-    pose_arm_left_init[1] = 0.7;
-    pose_arm_left_init[2] = -2.08;
-    pose_arm_left_init[3] = -1.15;
-    pose_arm_left_init[4] = -0.43;
-    pose_arm_left_init[5] = 0.17;
   }
 
   pose_arm_right_init.resize(pose_arm_left_init.size(), 0.0);
@@ -46,13 +50,16 @@ Posture::Posture(const std::string robot_name, const std::string eef_name, const
     pose_arm_right_init[1] *= -1;
     pose_arm_right_init[2] *= -1;
 
-    if (robot_name == "romeo")
+    if ((robot_name == "romeo") && (pose_arm_left_init.size() >= 6))
     {
       pose_arm_right_init[3] *= -1;
       pose_arm_right_init[4] *= -1;
     }
   }
 
+  std::cout << "------------- pose_arm_left_init";
+  for (int i=0; i<pose_arm_left_init.size(); ++i)
+    std::cout << pose_arm_left_init[i] << " " << pose_arm_right_init[i] << std::endl;
 
   pose_arm_zero.resize(pose_arm_left_init.size(), 0.0);
 

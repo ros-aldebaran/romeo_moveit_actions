@@ -27,7 +27,8 @@ public:
             const ros::Time timestamp,
             const geometry_msgs::Pose start_pose,
             const uint shapeType,
-            const double size);
+            const double size,
+            const double size_l);
   MetaBlock(const std::string name,
             const ros::Time timestamp,
             const geometry_msgs::Pose start_pose,
@@ -38,6 +39,7 @@ public:
 
   std::string name;
   double size;
+  double size_l;
   ros::Time timestamp;
   geometry_msgs::Pose start_pose;
   geometry_msgs::Pose goal_pose;
