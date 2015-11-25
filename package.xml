@@ -1,6 +1,6 @@
 <package>
   <name>moveit_simple_actions</name>
-  <version>0.0.2</version>
+  <version>0.0.3</version>
   <description>Interaction with objects using MoveIt</description>
 
   <maintainer email="natalia.lyubova@gmail.com">Natalia Lyubova</maintainer>
