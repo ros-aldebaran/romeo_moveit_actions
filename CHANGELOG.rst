@@ -2,8 +2,8 @@
 Changelog for package moveit_simple_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.2 (2015-11-25)
+------------------
 * adding a planning group (arm) name as an argument
 * taking into account object height when grasping
 * initial commit, new version of romeo_action package
