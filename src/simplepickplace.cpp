@@ -24,6 +24,8 @@ namespace moveit_simple_actions
                                    const double y_max,
                                    const double z_min,
                                    const double z_max,
+                                   const std::string left_arm_name,
+                                   const std::string right_arm_name,
                                    const bool verbose):
       nh_("~"),
       nh_priv_(""),
@@ -42,6 +44,8 @@ namespace moveit_simple_actions
       y_max_(y_max),
       z_min_(z_min),
       z_max_(z_max),
+      left_arm_name_(left_arm_name),
+      right_arm_name_(right_arm_name),
       test_mesh_(false),
       pose_default(),
       pose_default_r(),
@@ -140,8 +144,8 @@ namespace moveit_simple_actions
     env_shown_ = false;
     ros::Duration(1.0).sleep();
 
-    action_left = new Action(&nh_, visual_tools_, "left", robot_name_);
-    action_right = new Action(&nh_, visual_tools_, "right", robot_name_);
+    action_left = new Action(&nh_, visual_tools_, left_arm_name_, robot_name_);
+    action_right = new Action(&nh_, visual_tools_, right_arm_name_, robot_name_);
 
     msg_obj_pose.header.frame_id = action_left->grasp_data_.base_link_;
     msg_obj_poses.header.frame_id = action_left->grasp_data_.base_link_;

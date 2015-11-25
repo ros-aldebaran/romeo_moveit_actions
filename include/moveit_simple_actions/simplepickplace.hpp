@@ -22,6 +22,8 @@ public:
                   const double y_max,
                   const double z_min,
                   const double z_max,
+                  const std::string left_arm_name,
+                  const std::string right_arm_name,
                   const bool verbose);
   bool startRoutine();
 
@@ -66,6 +68,8 @@ public:
   double y_max_;
   double z_min_;
   double z_max_;
+  std::string left_arm_name_;
+  std::string right_arm_name_;
   bool test_mesh_;
 
   Action *action_left, *action_right;
