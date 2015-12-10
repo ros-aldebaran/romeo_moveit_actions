@@ -51,7 +51,7 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
   visual_tools_ = visual_tools;
 
   //update visualization
-  visual_tools_->loadEEMarker(grasp_data_.ee_group_, plan_group);
+  //visual_tools_->loadEEMarker(grasp_data_.ee_group_, plan_group);
 
   // Load Grasp generator
   simple_grasps_.reset(new moveit_simple_grasps::SimpleGrasps(visual_tools_));
