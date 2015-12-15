@@ -139,7 +139,6 @@ namespace moveit_simple_actions
     visual_tools_->setFloorToBaseHeight(floor_to_base_height);
     visual_tools_->deleteAllMarkers();
     visual_tools_->removeAllCollisionObjects();
-    visual_tools_->setMuted(false);
     cleanEnvironment(visual_tools_);
     env_shown_ = false;
     ros::Duration(1.0).sleep();

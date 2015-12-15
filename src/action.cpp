@@ -51,7 +51,7 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
   visual_tools_ = visual_tools;
 
   //update visualization
-  visual_tools_->loadEEMarker(grasp_data_.ee_group_, plan_group);
+  //visual_tools_->loadEEMarker(grasp_data_.ee_group_, plan_group);
 
   // Load Grasp generator
   simple_grasps_.reset(new moveit_simple_grasps::SimpleGrasps(visual_tools_));
@@ -442,8 +442,8 @@ std::vector<moveit_msgs::Grasp> Action::generateGrasps(MetaBlock *block)
   if (verbose_)
   {
     double speed = 0.01; //0.05; //
-    visual_tools_->publishGrasps(grasps, grasp_data_.ee_parent_link_, speed);
-    visual_tools_->deleteAllMarkers();
+    //visual_tools_->publishGrasps(grasps, grasp_data_.ee_parent_link_, speed);
+    //visual_tools_->deleteAllMarkers();
     sleep(0.5);
   }
 
