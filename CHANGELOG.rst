@@ -2,8 +2,8 @@
 Changelog for package moveit_simple_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.4 (2015-12-15)
+------------------
 * fixing with changes in moveit visual tools
 * Contributors: nlyubova
 
