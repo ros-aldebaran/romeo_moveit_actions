@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-SET(PROJECTNAME moveit_simple_actions)
+SET(PROJECTNAME romeo_moveit_actions)
 project(${PROJECTNAME})
 
 find_package(catkin REQUIRED COMPONENTS 

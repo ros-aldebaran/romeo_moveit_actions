@@ -1,5 +1,5 @@
 <package>
-  <name>moveit_simple_actions</name>
+  <name>romeo_moveit_actions</name>
   <version>0.0.5</version>
   <description>Interaction with objects using MoveIt</description>
 
