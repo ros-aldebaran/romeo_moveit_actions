@@ -1,7 +1,7 @@
 #include <Eigen/Eigen>
 #include <stdlib.h>
 
-#include <moveit_simple_actions/metablock.hpp>
+#include <metablock.hpp>
 
 MetaBlock::MetaBlock(const std::string name,
           const double start_x,

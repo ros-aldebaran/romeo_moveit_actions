@@ -1,5 +1,5 @@
-#include <moveit_simple_actions/objprocessing.hpp>
-#include <moveit_simple_actions/toolsForAction.hpp>
+#include <objprocessing.hpp>
+#include <toolsForAction.hpp>
 
 Objprocessing::Objprocessing(ros::NodeHandle *nh_):
   nh_(nh_),

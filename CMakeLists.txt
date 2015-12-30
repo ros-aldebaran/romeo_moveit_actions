@@ -27,7 +27,7 @@ catkin_package(
 ## Build ##
 ###########
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(include/romeo_moveit_actions ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -38,14 +38,16 @@ set(SRC
   src/action.cpp
   src/postures.cpp
   src/objprocessing.cpp
-  include/moveit_simple_actions/simplepickplace.hpp
-  include/moveit_simple_actions/metablock.hpp
-  include/moveit_simple_actions/action.hpp
-  include/moveit_simple_actions/custom_environment5.hpp
-  include/moveit_simple_actions/postures.hpp
-  include/moveit_simple_actions/tools.hpp
-  include/moveit_simple_actions/toolsForAction.hpp
-  include/moveit_simple_actions/objprocessing.hpp
+  src/visualtools.cpp
+  include/romeo_moveit_actions/simplepickplace.hpp
+  include/romeo_moveit_actions/metablock.hpp
+  include/romeo_moveit_actions/action.hpp
+  include/romeo_moveit_actions/custom_environment5.hpp
+  include/romeo_moveit_actions/postures.hpp
+  include/romeo_moveit_actions/tools.hpp
+  include/romeo_moveit_actions/toolsForAction.hpp
+  include/romeo_moveit_actions/objprocessing.hpp
+  include/romeo_moveit_actions/visualtools.hpp
 )
 
 # Main executable

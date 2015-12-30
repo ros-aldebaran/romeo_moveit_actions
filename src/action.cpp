@@ -1,6 +1,6 @@
 #include <moveit_msgs/PickupGoal.h>
 
-#include <moveit_simple_actions/action.hpp>
+#include <action.hpp>
 
 namespace moveit_simple_actions
 {

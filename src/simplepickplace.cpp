@@ -4,9 +4,9 @@
 #include <moveit_msgs/GetPlanningScene.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 
-#include <moveit_simple_actions/simplepickplace.hpp>
-#include <moveit_simple_actions/custom_environment5.hpp>
-#include <moveit_simple_actions/tools.hpp>
+#include <simplepickplace.hpp>
+#include <custom_environment5.hpp>
+#include <tools.hpp>
 
 namespace moveit_simple_actions
 {
@@ -49,7 +49,8 @@ namespace moveit_simple_actions
       test_mesh_(false),
       pose_default(),
       pose_default_r(),
-      objproc(&nh_priv_)
+      objproc(&nh_priv_),
+      vtools_(base_frame)
   {
     pose_default.orientation.x = -1; //0.0;
     pose_default.orientation.y = 0.0;
@@ -134,6 +135,8 @@ namespace moveit_simple_actions
     pub_obj_poses = nh_.advertise<geometry_msgs::PoseArray>("/obj_poses", 10);
     pub_obj_pose = nh_.advertise<geometry_msgs::PoseStamped>("/pose_current", 10);
 
+    pub_obj_moveit = nh_.advertise<moveit_msgs::CollisionObject>("/collision_object", 1000);
+
     // Load the Robot Viz Tools for publishing to rviz
     visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools("odom"));
     visual_tools_->setFloorToBaseHeight(floor_to_base_height);
@@ -145,7 +148,7 @@ namespace moveit_simple_actions
 
     action_left = new Action(&nh_, visual_tools_, left_arm_name_, robot_name_);
     action_right = new Action(&nh_, visual_tools_, right_arm_name_, robot_name_);
-
+ROS_INFO_STREAM("action_left->grasp_data_.base_link_ = " << action_left->grasp_data_.base_link_);
     msg_obj_pose.header.frame_id = action_left->grasp_data_.base_link_;
     msg_obj_poses.header.frame_id = action_left->grasp_data_.base_link_;
 
@@ -645,6 +648,15 @@ namespace moveit_simple_actions
           block_id = 0;
           publishCollisionMetaBlock(&blocks.back());
         }
+        else if (actionName == "rb") //key 'r' //clean and publish virtual for the right arm
+        {
+          removeObjects();
+          blocks.push_back(MetaBlock("Virtual1", ros::Time(), pose_default_r, shape_msgs::SolidPrimitive::BOX, block_size, block_size_l));
+          msg_obj_pose.pose = blocks.back().start_pose;
+          pub_obj_pose.publish(msg_obj_pose);
+          block_id = 0;
+          publishCollisionMetaBlock(&blocks.back());
+        }
         else if (actionName == "rc") //key 'r' //clean and publish virtual for the right arm
         {
           removeObjects();
@@ -995,6 +1007,8 @@ namespace moveit_simple_actions
     return msg_obj_collision;
   }
 
+
+
   void SimplePickPlace::resetBlock(MetaBlock *block)
   {
     // Remove attached object
@@ -1010,10 +1024,18 @@ namespace moveit_simple_actions
 
   void SimplePickPlace::publishCollisionMetaBlock(MetaBlock *block)
   {
+    moveit_msgs::CollisionObject collision_obj;
     if (block->shape.type == shape_msgs::SolidPrimitive::BOX)
-      visual_tools_->publishCollisionBlock(block->start_pose, block->name, block_size);
+    {
+      collision_obj = vtools_.publishCollisionBlock(block->start_pose, block->name, block_size);
+      //visual_tools_->publishCollisionBlock(block->start_pose, block->name, block_size);
+    }
     else if (block->shape.type == shape_msgs::SolidPrimitive::CYLINDER)
-      visual_tools_->publishCollisionCylinder(block->start_pose, block->name, block_size, block_size_l);
+    {
+      collision_obj = vtools_.publishCollisionCylinder(block->start_pose, block->name, block_size, block_size_l);
+      //visual_tools_->publishCollisionCylinder(block->start_pose, block->name, block_size, block_size_l);
+    }
+    pub_obj_moveit.publish(collision_obj);
   }
 
   void SimplePickPlace::getCollisionObjects(const moveit_msgs::CollisionObject::ConstPtr& msg)

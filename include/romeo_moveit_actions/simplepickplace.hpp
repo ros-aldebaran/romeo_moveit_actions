@@ -4,9 +4,10 @@
 #include <ros/ros.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 
-#include <moveit_simple_actions/metablock.hpp>
-#include <moveit_simple_actions/action.hpp>
-#include <moveit_simple_actions/objprocessing.hpp>
+#include <metablock.hpp>
+#include <action.hpp>
+#include <objprocessing.hpp>
+#include <visualtools.hpp>
 
 namespace moveit_simple_actions
 {
@@ -76,6 +77,8 @@ public:
   //Posture posture;
   Objprocessing objproc;
 
+  VisualTools vtools_;
+
   moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
 
   std::vector<MetaBlock> blocks;
@@ -94,6 +97,8 @@ public:
   geometry_msgs::Pose pose_default, pose_default_r;
 
   std::vector <geometry_msgs::Pose> stat_poses_success;
+
+  ros::Publisher pub_obj_moveit;
 };
 }
 

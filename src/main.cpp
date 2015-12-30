@@ -1,5 +1,5 @@
 #include <boost/program_options.hpp>
-#include <moveit_simple_actions/simplepickplace.hpp>
+#include <simplepickplace.hpp>
 
 void parse_command_line(int argc, char ** argv,
                         std::string &robot_name_,
@@ -65,7 +65,7 @@ void parse_command_line(int argc, char ** argv,
   z_min_ = vm["z_min"].as<double>();
   z_max_ = vm["z_max"].as<double>();
   left_arm_name_ = vm["left_arm_name"].as<std::string>();
-  right_arm_name = vm["right_arm_name"].as<std::string>();
+  right_arm_name_ = vm["right_arm_name"].as<std::string>();
   verbose_ = vm["verbose"].as<bool>();
 
   ROS_INFO_STREAM("robot name = " << robot_name_);
