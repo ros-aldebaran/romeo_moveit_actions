@@ -2,8 +2,8 @@
 Changelog for package romeo_moveit_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.6 (2015-12-30)
+------------------
 * fixing visualization of geometric shapes and cleaning
 * renaming the package to romeo_moveit_actions
 * 0.0.5
