@@ -5,7 +5,7 @@
 #include <ros/ros.h>
 
 #include <geometry_msgs/Pose.h>
-#include <shape_tools/solid_primitive_dims.h>
+#include <geometric_shapes/solid_primitive_dims.h>
 
 #include <object_recognition_msgs/RecognizedObjectArray.h>
 

@@ -41,7 +41,7 @@ MetaBlock::MetaBlock(const std::string name,
   {
     shape_msgs::SolidPrimitive shapeCylinder;
     shapeCylinder.type = shape_msgs::SolidPrimitive::CYLINDER;
-    shapeCylinder.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
+    shapeCylinder.dimensions.resize(geometric_shapes::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
     shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_HEIGHT] = size*size_r;
     shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_RADIUS] = size;
     this->shape = shapeCylinder;
@@ -50,7 +50,7 @@ MetaBlock::MetaBlock(const std::string name,
   {
     shape_msgs::SolidPrimitive shapeBox;
     shapeBox.type = shape_msgs::SolidPrimitive::BOX;
-    shapeBox.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::BOX>::value);
+    shapeBox.dimensions.resize(geometric_shapes::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::BOX>::value);
     shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_X] = size;
     shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_Y] = size;
     shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_Z] = size;
@@ -88,7 +88,7 @@ MetaBlock::MetaBlock(const std::string name,
   {
     shape_msgs::SolidPrimitive shapeCylinder;
     shapeCylinder.type = shape_msgs::SolidPrimitive::CYLINDER;
-    shapeCylinder.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
+    shapeCylinder.dimensions.resize(geometric_shapes::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
     shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_HEIGHT] = size_l;
     shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_RADIUS] = size;
     this->shape = shapeCylinder;
@@ -97,7 +97,7 @@ MetaBlock::MetaBlock(const std::string name,
   {
     shape_msgs::SolidPrimitive shapeBox;
     shapeBox.type = shape_msgs::SolidPrimitive::BOX;
-    shapeBox.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::BOX>::value);
+    shapeBox.dimensions.resize(geometric_shapes::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::BOX>::value);
     shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_X] = size;
     shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_Y] = size;
     shapeBox.dimensions[shape_msgs::SolidPrimitive::BOX_Z] = size_l;

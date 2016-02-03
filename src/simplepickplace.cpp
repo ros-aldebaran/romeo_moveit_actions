@@ -994,7 +994,7 @@ ROS_INFO_STREAM("action_left->grasp_data_.base_link_ = " << action_left->grasp_d
     {
       shape_msgs::SolidPrimitive msg_cylinder_;
       msg_cylinder_.type = shape_msgs::SolidPrimitive::CYLINDER;
-      msg_cylinder_.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
+      msg_cylinder_.dimensions.resize(geometric_shapes::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
       msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CYLINDER_RADIUS] = block_size;
       msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CONE_HEIGHT] = block_size_l;
 

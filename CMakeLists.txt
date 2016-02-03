@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_simple_grasps
   std_msgs
   geometry_msgs
+  geometric_shapes
   roscpp
   cmake_modules
   object_recognition_msgs
@@ -20,7 +21,7 @@ find_package(Boost QUIET COMPONENTS program_options)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS
+  CATKIN_DEPENDS geometric_shapes
 )
 
 ###########
