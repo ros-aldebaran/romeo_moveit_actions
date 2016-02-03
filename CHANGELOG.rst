@@ -2,8 +2,8 @@
 Changelog for package romeo_moveit_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.7 (2016-02-03)
+------------------
 * Merge pull request `#1 <https://github.com/nlyubova/romeo_moveit_actions/issues/1>`_ from IanTheEngineer/remove_shape_tools
   Convert deprecated shape_tools dependency
 * Convert deprecated shape_tools dependency

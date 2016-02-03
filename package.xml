@@ -1,6 +1,6 @@
 <package>
   <name>romeo_moveit_actions</name>
-  <version>0.0.6</version>
+  <version>0.0.7</version>
   <description>Interaction with objects using MoveIt</description>
 
   <maintainer email="natalia.lyubova@gmail.com">Natalia Lyubova</maintainer>
