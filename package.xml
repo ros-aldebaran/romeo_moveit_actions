@@ -1,11 +1,14 @@
 <package>
   <name>romeo_moveit_actions</name>
   <version>0.0.7</version>
-  <description>Interaction with objects using MoveIt</description>
+  <description>Interaction with objects using MoveIt! configured for Romeo, NAO, and Pepper robots</description>
 
   <maintainer email="natalia.lyubova@gmail.com">Natalia Lyubova</maintainer>
 
   <license>BSD</license>
+
+  <url type="bugtracker">https://github.com/ros-aldebaran/romeo_moveit_actions/issues</url>
+  <url type="repository">https://github.com/ros-aldebaran/romeo_moveit_actions</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
@@ -39,6 +42,4 @@
   <run_depend>object_recognition_msgs</run_depend>
   <run_depend>actionlib</run_depend>
 
-  <export>
-  </export>
 </package>
