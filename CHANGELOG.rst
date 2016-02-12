@@ -2,6 +2,11 @@
 Changelog for package romeo_moveit_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fixing the doc and description
+* Contributors: nlyubova
+
 0.0.7 (2016-02-03)
 ------------------
 * Merge pull request `#1 <https://github.com/nlyubova/romeo_moveit_actions/issues/1>`_ from IanTheEngineer/remove_shape_tools
