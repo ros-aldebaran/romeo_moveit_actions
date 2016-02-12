@@ -1,6 +1,6 @@
 <package>
   <name>romeo_moveit_actions</name>
-  <version>0.0.7</version>
+  <version>0.0.8</version>
   <description>Interaction with objects using MoveIt! configured for Romeo, NAO, and Pepper robots</description>
 
   <maintainer email="natalia.lyubova@gmail.com">Natalia Lyubova</maintainer>

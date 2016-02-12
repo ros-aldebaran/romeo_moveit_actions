@@ -2,8 +2,8 @@
 Changelog for package romeo_moveit_actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.8 (2016-02-12)
+------------------
 * fixing the doc and description
 * Contributors: nlyubova
 
