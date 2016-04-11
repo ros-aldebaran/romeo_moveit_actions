@@ -21,7 +21,7 @@ find_package(Boost QUIET COMPONENTS program_options)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS geometric_shapes
+  CATKIN_DEPENDS roscpp geometry_msgs geometric_shapes std_msgs moveit_ros_planning moveit_ros_planning_interface moveit_visual_tools moveit_simple_grasps object_recognition_msgs
 )
 
 ###########
