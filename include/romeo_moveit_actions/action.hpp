@@ -14,8 +14,8 @@
 //for showing grasps
 #include <moveit_visual_tools/moveit_visual_tools.h>
 
-#include <metablock.hpp>
-#include <postures.hpp>
+#include "metablock.hpp"
+#include "postures.hpp"
 
 namespace moveit_simple_actions
 {
