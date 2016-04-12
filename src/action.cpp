@@ -1,6 +1,8 @@
 #include <moveit_msgs/PickupGoal.h>
+#include <moveit_msgs/RobotTrajectory.h>
+#include <moveit_msgs/GetPositionFK.h>
 
-#include <action.hpp>
+#include "romeo_moveit_actions/action.hpp"
 
 namespace moveit_simple_actions
 {
@@ -10,7 +12,9 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
   attempts_max_(3),
   planning_time_(30.0),
   //planner_id_("RRTConnectkConfigDefault"),
-  tolerance_min_(0.01),
+  tolerance_min_(0.1),
+  tolerance_step_(0.1),
+  max_velocity_scaling_factor_(0.6),
   arm(arm),
   end_eff(arm+"_hand"),
   plan_group(arm+"_arm"),
@@ -22,8 +26,8 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
 
   // Create MoveGroup for one of the planning groups
   move_group_.reset(new move_group_interface::MoveGroup(plan_group));
-  move_group_->setGoalTolerance(0.1);
-  move_group_->setPlanningTime(10.0);
+  move_group_->setGoalTolerance(tolerance_min_);
+  move_group_->setPlanningTime(planning_time_);
 
   /*std::cout << "----- move_group_->getPlanningTime()=" << move_group_->getPlanningTime() << std::endl;
   std::cout << "----- move_group_->getPlanningFrame()=" << move_group_->getPlanningFrame() << std::endl; //= odom
@@ -58,6 +62,10 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
 
   pub_obj_pose = nh_->advertise<geometry_msgs::PoseStamped>("/pose_target", 10);
   pub_obj_poses = nh_->advertise<geometry_msgs::PoseStamped>("/pose_targets", 10);
+
+  pub_plan_pose_ = nh_->advertise<geometry_msgs::PoseStamped>("/pose_plan", 10);
+  pub_plan_traj_ = nh_->advertise<moveit_msgs::RobotTrajectory>("/trajectory", 10);
+  client_fk_ = nh_->serviceClient<moveit_msgs::GetPositionFK>("/compute_fk");
 }
 
 bool Action::pickDefault(MetaBlock *block)
@@ -181,9 +189,11 @@ bool Action::graspPlan(MetaBlock *block, const std::string surface_name) //compu
   success = move_group_->plan(*current_plan_);
   if (!success)
     current_plan_.reset();
+  else
+    publishPlanInfo(*current_plan_);
 
   if (verbose_ && success)
-      ROS_INFO_STREAM("Grasp plannin success! \n\n");
+      ROS_INFO_STREAM("Grasp planning success! \n\n");
 
   return success;
 }
@@ -340,25 +350,25 @@ bool Action::reachAction(geometry_msgs::Pose pose_target, const std::string surf
   move_group_->setPoseTarget(pose_target, move_group_->getEndEffectorLink().c_str());
   pub_obj_pose.publish(move_group_->getPoseTarget());
 
-  //move_group_->setMaxVelocityScalingFactor(0.6); //TODO back
-  //move_group_->setNumPlanningAttempts(50);
-  double tolerance_min = 0.01;
-  double tolerance_max = 0.5;
-  double tolerance = tolerance_min;
+  move_group_->setMaxVelocityScalingFactor(max_velocity_scaling_factor_); //TODO back
+  //move_group_->setNumPlanningAttempts(50); //Seems to not improve the results
+  double tolerance = tolerance_min_;
   int attempts = 0;
 
   //find a planning solution while increasing tolerance
-  while (!success && (attempts < 5))
+  while (!success && (attempts < attempts_max_))
   {
     move_group_->setGoalTolerance(tolerance);//0.05 //TODO to check
     //move_group_->setGoalPositionTolerance(0.07);
     //move_group_->setGoalOrientationTolerance(0.1);
     success = move_group_->plan(plan);
 
+    if (verbose_ && success)
+      ROS_INFO_STREAM("Reaching success with tolerance " << tolerance << "\n\n");
+
     if (!success)
     {
-      tolerance_min = tolerance;
-      tolerance = (tolerance_max-tolerance_min) / 2.0;
+      tolerance += tolerance_step_;
 
       if (verbose_)
         ROS_INFO_STREAM("Planning retry with the tolerance " << tolerance);
@@ -371,13 +381,15 @@ bool Action::reachAction(geometry_msgs::Pose pose_target, const std::string surf
   {
     move_group_->setApproximateJointValueTarget(pose_target, move_group_->getEndEffectorLink().c_str());
     success = move_group_->plan(plan);
+    if (verbose_ && success)
+      ROS_INFO_STREAM("Reaching success with approximate joint value");
   }
 
   if (success)
+  {
     success = move_group_->move();
-
-  if (verbose_ && success)
-    ROS_INFO_STREAM("Reaching success with tolerance " << tolerance << "\n\n");
+    publishPlanInfo(plan);
+  }
 
   return success;
 }
@@ -507,21 +519,21 @@ bool Action::pickAction(MetaBlock *block,
     //move_group_->setPlannerId("RRTConnectkConfigDefault");
     //move_group_->setPlannerId("RRTConnect");
 
-    double tolerance_min = 0.01;
-    double tolerance_max = 0.5;
     double tolerance = tolerance_min;
     int attempts = 0;
 
     //find a planning solution while increasing tolerance
-    while (!success && (attempts < attempts_max_))
+    while (!success && (attempts < attempts_nbr))
     {
       move_group_->setGoalTolerance(tolerance);//0.05 //TODO to check
       success = move_group_->pick(block->name, grasps);
 
       if (!success)
       {
-        tolerance_min = tolerance;
-        tolerance = (tolerance_max-tolerance_min) / 2.0;
+        tolerance += tolerance_step_;
+
+        if (verbose_)
+          ROS_INFO_STREAM("Planning retry with the tolerance " << tolerance);
       }
       ++attempts;
     }
@@ -593,6 +605,76 @@ bool Action::placeAction(MetaBlock *block, const std::string surface_name)
   }
 
   return success;
+}
+
+void Action::publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan)
+{
+    // Get the last position of the trajectory plan and transform that joints values
+    // into pose of end effector in /base_link frame
+    // Then that is published to /pose_plan and the trajectory to /trajectory topics
+    //TODO: Check if using directly robotStatePtr changes the real robot
+    int num_points = plan.trajectory_.joint_trajectory.points.size();
+    moveit::core::RobotStatePtr robotStatePtr = move_group_->getCurrentState();
+    robotStatePtr->setJointGroupPositions(plan_group, plan.trajectory_.joint_trajectory.points[num_points-1].positions);
+    moveit_msgs::RobotState robotStateMsg;
+    moveit::core::robotStateToRobotStateMsg(*robotStatePtr, robotStateMsg);
+
+    std::vector<std::string> links_vect;
+    links_vect.push_back(move_group_->getEndEffectorLink());
+
+    moveit_msgs::GetPositionFK srv;
+    srv.request.header.frame_id = "/base_link"; //grasp_data_.ee_parent_link_; //TODO: To check
+    srv.request.fk_link_names = links_vect;
+    srv.request.robot_state = robotStateMsg;
+
+    if (client_fk_.call(srv))
+    {
+      if(srv.response.pose_stamped.size() > 0)
+      {
+        int eef_index = srv.response.fk_link_names.size() - 1;
+        pub_plan_pose_.publish(srv.response.pose_stamped[eef_index]);
+      }else
+      {
+          ROS_WARN_STREAM("No result of service /compute_fk \nMoveitCodeError: " << srv.response.error_code);
+      }
+    }
+    else
+    {
+      ROS_WARN("Failed to call service /compute_fk");
+    }
+    pub_plan_traj_.publish(plan.trajectory_);
+}
+
+void Action::setPlanningTime(const double value)
+{
+    planning_time_ = value;
+    move_group_->setPlanningTime(value);
+}
+
+void Action::setToleranceStep(const double value)
+{
+    tolerance_step_ = value;
+}
+
+void Action::setToleranceMin(const double value)
+{
+    tolerance_min_ = value;
+}
+
+void Action::setMaxVelocityScalingFactor(const double value)
+{
+    max_velocity_scaling_factor_ = value;
+    move_group_->setMaxVelocityScalingFactor(max_velocity_scaling_factor_);
+}
+
+void Action::setVerbose(bool verbose)
+{
+    verbose_ = verbose;
+}
+
+void Action::setAttemptsMax(int value)
+{
+    attempts_max_ = value;
 }
 
 /*void Action::filterGrasps(MetaBlock *block)
