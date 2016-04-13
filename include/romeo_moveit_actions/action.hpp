@@ -21,6 +21,9 @@
 #include "metablock.hpp"
 #include "postures.hpp"
 
+#define FLAG_NO_MOVE        1
+#define FLAG_MOVE           2
+
 namespace moveit_simple_actions
 {
 
@@ -72,6 +75,7 @@ public:
   void setMaxVelocityScalingFactor(const double value);
   void setVerbose(bool verbose);
   void setAttemptsMax(int value);
+  void setFlag(int flag);
 
   //active end effector
   const std::string arm;
@@ -110,6 +114,8 @@ private:
   double planning_time_;
   double tolerance_min_, tolerance_step_;
   double max_velocity_scaling_factor_;
+
+  int flag_;
 
   geometry_msgs::Pose pose_init;
 
