@@ -64,7 +64,7 @@ public:
 
   void setTolerance(const double value);
 
-  void publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan);
+  void publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan, geometry_msgs::Pose pose_target);
 
   void setPlanningTime(const double value);
   void setToleranceStep(const double value);
