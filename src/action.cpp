@@ -15,6 +15,7 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
   tolerance_min_(0.1),
   tolerance_step_(0.1),
   max_velocity_scaling_factor_(0.6),
+  flag_(FLAG_MOVE),
   arm(arm),
   end_eff(arm+"_hand"),
   plan_group(arm+"_arm"),
@@ -143,13 +144,15 @@ bool Action::executeAction()//execute
   if (!move_group_)
     return false;
 
-  if (current_plan_)
+  if (current_plan_ && flag_ == FLAG_MOVE)
     success = move_group_->execute(*current_plan_);
 
   if (verbose_ && success)
       ROS_INFO_STREAM("Execute success! \n\n");
 
-  return success;
+  // If the function is called and FLAG_NO_MOVE return true
+  // because only call executeAction if plan is success
+  return success || flag_ == FLAG_NO_MOVE;
 }
 
 bool Action::graspPlanAndMove(MetaBlock *block, const std::string surface_name)
@@ -158,7 +161,7 @@ bool Action::graspPlanAndMove(MetaBlock *block, const std::string surface_name)
 
   success = graspPlan(block, surface_name);
   if (success)
-    success = move_group_->move();
+    success = executeAction();
 
   if (verbose_ && success)
       ROS_INFO_STREAM("Plan and move success! \n\n");
@@ -341,7 +344,8 @@ bool Action::reachAction(geometry_msgs::Pose pose_target, const std::string surf
   if (!move_group_)
     return false;
 
-  moveit::planning_interface::MoveGroup::Plan plan;
+  //moveit::planning_interface::MoveGroup::Plan plan;
+  current_plan_.reset(new moveit::planning_interface::MoveGroup::Plan());
 
   // Prevent collision with table
   if (!surface_name.empty())
@@ -361,7 +365,8 @@ bool Action::reachAction(geometry_msgs::Pose pose_target, const std::string surf
     move_group_->setGoalTolerance(tolerance);//0.05 //TODO to check
     //move_group_->setGoalPositionTolerance(0.07);
     //move_group_->setGoalOrientationTolerance(0.1);
-    success = move_group_->plan(plan);
+    //success = move_group_->plan(plan);
+    success = move_group_->plan(*current_plan_);
 
     if (verbose_ && success)
       ROS_INFO_STREAM("Reaching success with tolerance " << tolerance << "\n\n");
@@ -380,16 +385,18 @@ bool Action::reachAction(geometry_msgs::Pose pose_target, const std::string surf
   if (!success)
   {
     move_group_->setApproximateJointValueTarget(pose_target, move_group_->getEndEffectorLink().c_str());
-    success = move_group_->plan(plan);
+    //success = move_group_->plan(plan);
+    success = move_group_->plan(*current_plan_);
     if (verbose_ && success)
       ROS_INFO_STREAM("Reaching success with approximate joint value");
   }
 
   if (success)
   {
-    publishPlanInfo(plan, pose_target);
-    success = move_group_->move();
-  }
+    publishPlanInfo(*current_plan_, pose_target);
+    success = executeAction();
+  }else
+    current_plan_.reset();
 
   return success;
 }
@@ -705,6 +712,17 @@ void Action::setAttemptsMax(int value)
     attempts_max_ = value;
     if(verbose_)
         ROS_INFO_STREAM("Attempts max set to " << value);
+}
+
+void Action::setFlag(int flag)
+{
+    if(flag == FLAG_MOVE || flag == FLAG_NO_MOVE)
+    {
+    flag_ = flag;
+    if(verbose_)
+        ROS_INFO_STREAM("Flag set to " << flag);
+    }else
+        ROS_WARN_STREAM("No value: " << flag << " for flag, will remain as: " << flag_);
 }
 
 /*void Action::filterGrasps(MetaBlock *block)
