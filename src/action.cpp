@@ -190,7 +190,7 @@ bool Action::graspPlan(MetaBlock *block, const std::string surface_name) //compu
   if (!success)
     current_plan_.reset();
   else
-    publishPlanInfo(*current_plan_);
+    publishPlanInfo(*current_plan_, block->start_pose);
 
   if (verbose_ && success)
       ROS_INFO_STREAM("Grasp planning success! \n\n");
@@ -387,8 +387,8 @@ bool Action::reachAction(geometry_msgs::Pose pose_target, const std::string surf
 
   if (success)
   {
+    publishPlanInfo(plan, pose_target);
     success = move_group_->move();
-    publishPlanInfo(plan);
   }
 
   return success;
@@ -607,7 +607,7 @@ bool Action::placeAction(MetaBlock *block, const std::string surface_name)
   return success;
 }
 
-void Action::publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan)
+void Action::publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan, geometry_msgs::Pose pose_target)
 {
     // Get the last position of the trajectory plan and transform that joints values
     // into pose of end effector in /base_link frame
@@ -632,7 +632,25 @@ void Action::publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan)
       if(srv.response.pose_stamped.size() > 0)
       {
         int eef_index = srv.response.fk_link_names.size() - 1;
+
         pub_plan_pose_.publish(srv.response.pose_stamped[eef_index]);
+
+        if(verbose_)
+        {
+            // Compute the distance between the last pose of the trajectory plan
+            // and the target pose
+            double x_target = pose_target.position.x;
+            double y_target = pose_target.position.y;
+            double z_target = pose_target.position.z;
+
+            double x_pose = srv.response.pose_stamped[eef_index].pose.position.x;
+            double y_pose = srv.response.pose_stamped[eef_index].pose.position.y;
+            double z_pose = srv.response.pose_stamped[eef_index].pose.position.z;
+
+            double error = sqrt(pow(x_target-x_pose,2)+pow(y_target-y_pose,2)+pow(z_target-z_pose,2));
+
+            ROS_INFO_STREAM("Distance of last trajectory pose from target pose: " << error << " meters");
+        }
       }else
       {
           ROS_WARN_STREAM("No result of service /compute_fk \nMoveitCodeError: " << srv.response.error_code);
@@ -649,32 +667,44 @@ void Action::setPlanningTime(const double value)
 {
     planning_time_ = value;
     move_group_->setPlanningTime(value);
+    if(verbose_)
+        ROS_INFO_STREAM("Planning time set to " << value);
 }
 
 void Action::setToleranceStep(const double value)
 {
     tolerance_step_ = value;
+    if(verbose_)
+        ROS_INFO_STREAM("Tolerance step set to " << value);
 }
 
 void Action::setToleranceMin(const double value)
 {
     tolerance_min_ = value;
+    if(verbose_)
+        ROS_INFO_STREAM("Tolerance min set to " << value);
 }
 
 void Action::setMaxVelocityScalingFactor(const double value)
 {
     max_velocity_scaling_factor_ = value;
     move_group_->setMaxVelocityScalingFactor(max_velocity_scaling_factor_);
+    if(verbose_)
+        ROS_INFO_STREAM("Max velocity scaling factor set to " << value);
 }
 
 void Action::setVerbose(bool verbose)
 {
     verbose_ = verbose;
+    if(verbose_)
+        ROS_INFO_STREAM("Verbose set to " << verbose);
 }
 
 void Action::setAttemptsMax(int value)
 {
     attempts_max_ = value;
+    if(verbose_)
+        ROS_INFO_STREAM("Attempts max set to " << value);
 }
 
 /*void Action::filterGrasps(MetaBlock *block)
