@@ -14,8 +14,15 @@
 //for showing grasps
 #include <moveit_visual_tools/moveit_visual_tools.h>
 
+// Forward kinematics to have final pose of trajectory
+#include <moveit/robot_state/robot_state.h>
+#include <moveit/robot_state/conversions.h>
+
 #include "metablock.hpp"
 #include "postures.hpp"
+
+#define FLAG_NO_MOVE        1
+#define FLAG_MOVE           2
 
 namespace moveit_simple_actions
 {
@@ -60,6 +67,16 @@ public:
 
   void setTolerance(const double value);
 
+  void publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan, geometry_msgs::Pose pose_target);
+
+  void setPlanningTime(const double value);
+  void setToleranceStep(const double value);
+  void setToleranceMin(const double value);
+  void setMaxVelocityScalingFactor(const double value);
+  void setVerbose(bool verbose);
+  void setAttemptsMax(int value);
+  void setFlag(int flag);
+
   //active end effector
   const std::string arm;
   const std::string end_eff;
@@ -87,10 +104,18 @@ private:
 
   ros::Publisher pub_obj_pose, pub_obj_poses;
 
+  //publish final pose of trajectory
+  ros::Publisher pub_plan_pose_;
+  ros::Publisher pub_plan_traj_;
+  ros::ServiceClient client_fk_;
+
   bool verbose_;
   int attempts_max_;
   double planning_time_;
-  double tolerance_min_;
+  double tolerance_min_, tolerance_step_;
+  double max_velocity_scaling_factor_;
+
+  int flag_;
 
   geometry_msgs::Pose pose_init;
 
