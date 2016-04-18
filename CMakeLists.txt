@@ -28,7 +28,7 @@ catkin_package(
 ## Build ##
 ###########
 
-include_directories(include/romeo_moveit_actions ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 link_directories(${Boost_LIBRARY_DIRS})
 

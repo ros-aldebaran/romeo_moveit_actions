@@ -4,9 +4,9 @@
 #include <moveit_msgs/GetPlanningScene.h>
 #include <moveit_msgs/DisplayTrajectory.h>
 
-#include <simplepickplace.hpp>
-#include <custom_environment5.hpp>
-#include <tools.hpp>
+#include "romeo_moveit_actions/simplepickplace.hpp"
+#include "romeo_moveit_actions/custom_environment5.hpp"
+#include "romeo_moveit_actions/tools.hpp"
 
 namespace moveit_simple_actions
 {

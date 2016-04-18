@@ -1,4 +1,4 @@
-#include "visualtools.hpp"
+#include "romeo_moveit_actions/visualtools.hpp"
 
 // Shape tools
 #include <geometric_shapes/solid_primitive_dims.h>

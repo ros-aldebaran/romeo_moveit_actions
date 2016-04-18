@@ -1,7 +1,7 @@
 // MoveIt!
 #include <moveit/move_group_interface/move_group.h>
 
-#include <postures.hpp>
+#include "romeo_moveit_actions/postures.hpp"
 
 Posture::Posture(const std::string robot_name, const std::string eef_name, const std::string group_name)
 {

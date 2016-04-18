@@ -1,5 +1,6 @@
 #include <boost/program_options.hpp>
-#include <simplepickplace.hpp>
+
+#include "romeo_moveit_actions/simplepickplace.hpp"
 
 void parse_command_line(int argc, char ** argv,
                         std::string &robot_name_,

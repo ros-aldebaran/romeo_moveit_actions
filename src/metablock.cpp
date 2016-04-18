@@ -1,7 +1,7 @@
 #include <Eigen/Eigen>
 #include <stdlib.h>
 
-#include <metablock.hpp>
+#include "romeo_moveit_actions/metablock.hpp"
 
 MetaBlock::MetaBlock(const std::string name,
           const double start_x,
