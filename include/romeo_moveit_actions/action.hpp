@@ -36,8 +36,7 @@ public:
          const std::string robot_name);
   bool pickAction(MetaBlock *block, const std::string surface_name,
                   const int attempts_nbr=0,
-                  const double planning_time=0.0,
-                  const double tolerance_min=0.0);
+                  const double planning_time=0.0);
   bool placeAction(MetaBlock *block, const std::string surface_name);
   bool pickDefault(MetaBlock *block);
 

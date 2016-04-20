@@ -25,6 +25,8 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
   ROS_INFO_STREAM("End Effector: " << end_eff);
   ROS_INFO_STREAM("Planning Group: " << plan_group);*/
 
+  nh_->getParam("tolerance_min", tolerance_min_);
+
   // Create MoveGroup for one of the planning groups
   move_group_.reset(new move_group_interface::MoveGroup(plan_group));
   move_group_->setGoalTolerance(tolerance_min_);
@@ -176,7 +178,8 @@ bool Action::graspPlan(MetaBlock *block, const std::string surface_name) //compu
   if (verbose_)
     ROS_INFO_STREAM("Planning " << block->name << " at pose " << block->start_pose);
 
-  move_group_->setGoalTolerance(0.1);//0.05 //TODO
+  double tolerance_cur =  move_group_->getGoalPositionTolerance();
+  move_group_->setGoalTolerance(0.1);//0.05
 
   // Prevent collision with table
   if (!surface_name.empty())
@@ -197,6 +200,8 @@ bool Action::graspPlan(MetaBlock *block, const std::string surface_name) //compu
 
   if (verbose_ && success)
       ROS_INFO_STREAM("Grasp planning success! \n\n");
+
+  move_group_->setGoalTolerance(tolerance_cur);
 
   return success;
 }
@@ -222,14 +227,20 @@ bool Action::poseHeadDown()
 
 bool Action::poseHandInit()
 {
+  double tolerance_cur =  move_group_->getGoalPositionTolerance();
   move_group_->setGoalTolerance(0.05);
-  return posture.poseHandInit(end_eff, plan_group, arm);
+  bool res = posture.poseHandInit(end_eff, plan_group, arm);
+  move_group_->setGoalTolerance(tolerance_cur);
+  return res;
 }
 
 bool Action::poseHand(std::vector<double> *pose_hand)
 {
+  double tolerance_cur =  move_group_->getGoalPositionTolerance();
   move_group_->setGoalTolerance(0.05);
-  return posture.poseHand(end_eff, plan_group, arm, pose_hand);
+  bool res = posture.poseHand(end_eff, plan_group, arm, pose_hand);
+  move_group_->setGoalTolerance(tolerance_cur);
+  return res;
 }
 
 bool Action::poseHandZero()
@@ -408,8 +419,7 @@ bool Action::graspPlanAllPossible(MetaBlock *block, const std::string surface_na
   if (verbose_)
     ROS_INFO_STREAM("Planning all possible grasps to " << block->start_pose);
 
-  move_group_->setGoalTolerance(0.1);
-  //move_group_->setPoseReferenceFrame("base_link"); //"LWristYaw_link"
+  //move_group_->setPoseReferenceFrame("LWristYaw_link");
   //move_group_->setStartState(*move_group_->getCurrentState());
   //move_group_->setPlanningTime(30); //in GUI=5
   //move_group_->setNumPlanningAttempts(10); //in GUI=10
@@ -426,6 +436,9 @@ bool Action::graspPlanAllPossible(MetaBlock *block, const std::string surface_na
 
   if (targets.size() > 0)
   {
+    double tolerance_cur =  move_group_->getGoalPositionTolerance();
+    move_group_->setGoalTolerance(0.1);
+
     int counts = 0;
     for (std::vector<geometry_msgs::Pose>::iterator it=targets.begin(); it!=targets.end();++it)
     {
@@ -438,6 +451,8 @@ bool Action::graspPlanAllPossible(MetaBlock *block, const std::string surface_na
     }
     if (verbose_)
       ROS_INFO_STREAM( "Planning success for " << counts << " generated poses! \n\n");
+
+    move_group_->setGoalTolerance(tolerance_cur);
   }
   return success;
 }
@@ -498,8 +513,7 @@ std::vector<geometry_msgs::Pose> Action::configureForPlanning(const std::vector<
 bool Action::pickAction(MetaBlock *block, 
                         const std::string surface_name,
                         int attempts_nbr,
-                        double planning_time,
-                        double tolerance_min)
+                        double planning_time)
 {
   bool success(false);
   //if (verbose_)
@@ -510,9 +524,6 @@ bool Action::pickAction(MetaBlock *block,
 
   if (planning_time == 0.0)
     planning_time = planning_time_;
-
-  if (tolerance_min == 0.0)
-    tolerance_min = tolerance_min_;
 
   std::vector<moveit_msgs::Grasp> grasps = generateGrasps(block);
 
@@ -526,7 +537,7 @@ bool Action::pickAction(MetaBlock *block,
     //move_group_->setPlannerId("RRTConnectkConfigDefault");
     //move_group_->setPlannerId("RRTConnect");
 
-    double tolerance = tolerance_min;
+    double tolerance = tolerance_min_;
     int attempts = 0;
 
     //find a planning solution while increasing tolerance
@@ -544,6 +555,8 @@ bool Action::pickAction(MetaBlock *block,
       }
       ++attempts;
     }
+
+    move_group_->setGoalTolerance(tolerance_min_);
 
     if (verbose_ & success)
       ROS_INFO_STREAM("Pick success with tolerance " << tolerance << "\n\n");

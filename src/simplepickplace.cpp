@@ -148,7 +148,7 @@ namespace moveit_simple_actions
 
     action_left = new Action(&nh_, visual_tools_, left_arm_name_, robot_name_);
     action_right = new Action(&nh_, visual_tools_, right_arm_name_, robot_name_);
-ROS_INFO_STREAM("action_left->grasp_data_.base_link_ = " << action_left->grasp_data_.base_link_);
+    //ROS_INFO_STREAM("action_left->grasp_data_.base_link_ = " << action_left->grasp_data_.base_link_);
     msg_obj_pose.header.frame_id = action_left->grasp_data_.base_link_;
     msg_obj_poses.header.frame_id = action_left->grasp_data_.base_link_;
 
