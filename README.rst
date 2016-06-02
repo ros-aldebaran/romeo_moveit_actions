@@ -15,9 +15,16 @@ Installation
 ============
 
 * apt-get install ros-indigo-romeo-moveit-actions
-* or from source https://github.com/ros-aldebaran/romeo_moveit_actions
+* or from source: git clone https://github.com/ros-aldebaran/romeo_moveit_actions
 
-Additionally, the package requires to install a robot model package and MoveIt! configuration, at minimum. 
+In case of compilin from source, install the following dependencies:
+  * MoveIt!
+      * apt-get install ros-indigo-moveit-full
+      * apt-get install ros-indigo-moveit-visual-tools
+  * MoveIt! Grasp Generator 
+      * from source, the recommended branch: git clone -b romeo-dev --single-branch https://github.com/nlyubova/moveit_simple_grasps
+
+Additionally, install a required robot description package and MoveIt! configuration, at minimum.
 
 Get a robot description:
   * for Romeo:
@@ -40,9 +47,6 @@ Get a robot-specific Moveit! configuration:
   * for Pepper: 
       * apt-get install ros-indigo-pepper-moveit-config
       * or from source https://github.com/ros-naoqi/pepper_moveit_config 
-
-Get the MoveIt! Grasp Generator:
- * https://github.com/nlyubova/moveit_simple_grasps/tree/romeo-dev (the recommended branch)
 
 
 For Romeo real (not a simulator)
