@@ -7,7 +7,6 @@
 #include "metablock.hpp"
 #include "action.hpp"
 #include "objprocessing.hpp"
-#include "visualtools.hpp"
 
 namespace moveit_simple_actions
 {
@@ -28,6 +27,17 @@ public:
                   const bool verbose);
   bool startRoutine();
 
+  void switchArm(Action *action_now);
+
+  void createObj(const MetaBlock &block);
+  void resetBlock(MetaBlock *block);
+  void getCollisionObjects(const moveit_msgs::CollisionObject::ConstPtr& msg);
+  void cleanObjects(std::vector<MetaBlock> *objects, const bool list_erase=true);
+  moveit_msgs::CollisionObject wrapToCollisionObject(MetaBlock *block);
+  moveit_msgs::CollisionObject publishCollisionBlock(MetaBlock *block,
+                                                     const rviz_visual_tools::colors color=rviz_visual_tools::GREEN);
+
+  //Evaluation in toolsEvaluation.hpp
   void testReach(const bool pickVsReach=true, bool test_poses_rnd=false);
   void testReachSingleHand(Action *action, ros::Publisher *pub_obj_poses, std::vector<MetaBlock> &blocks, const bool pickVsReach);
 
@@ -41,15 +51,6 @@ public:
   geometry_msgs::PoseArray generatePosesRnd(const int poses_nbr, std::vector<MetaBlock> &blocks);
   geometry_msgs::PoseArray generatePosesGrid(std::vector<MetaBlock> &blocks);
 
-  void resetBlock(MetaBlock *block);
-  void publishCollisionMetaBlock(MetaBlock *block);
-
-  void setCollisionObjects();
-  void getCollisionObjects(const moveit_msgs::CollisionObject::ConstPtr& msg);
-  void cleanObjects();
-  void removeObjects();
-  moveit_msgs::CollisionObject wrapToCollisionObject(MetaBlock *block);
-
   // A shared node handle
   ros::NodeHandle nh_, nh_priv_;
 
@@ -57,10 +58,17 @@ public:
   double test_step_;
   const bool verbose_;
   const bool saveStat_;
-  std::string base_frame;
-  double block_size;
-  double block_size_l;
-  double floor_to_base_height;
+  std::string base_frame_;
+  double block_size_x;
+  double block_size_y;
+  double floor_to_base_height_;
+
+  std::string left_arm_name_;
+  std::string right_arm_name_;
+  bool test_mesh_;
+
+  //Posture posture;
+  Objprocessing objproc;
 
   bool env_shown_;
   double x_min_;
@@ -69,36 +77,28 @@ public:
   double y_max_;
   double z_min_;
   double z_max_;
-  std::string left_arm_name_;
-  std::string right_arm_name_;
-  bool test_mesh_;
+  std::string support_surface_name_;
 
-  Action *action_left, *action_right;
-  //Posture posture;
-  Objprocessing objproc;
-
-  VisualTools vtools_;
+  Action *action_left_, *action_right_;
 
   moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
 
-  std::vector<MetaBlock> blocks;
-  std::vector<MetaBlock> blocks_test;
-  //std::vector<moveit_msgs::CollisionObject> obj_coll;
+  std::vector<MetaBlock> blocks_;
+  std::vector<MetaBlock> blocks_test_;
+  std::vector<MetaBlock> blocks_surfaces_;
+  //std::vector<moveit_msgs::CollisionObject> obj_coll_;
 
-  ros::Subscriber sub_obj_coll;
-  ros::Publisher pub_obj_poses, pub_obj_pose; //pub_obj_coll
-  geometry_msgs::PoseStamped msg_obj_pose;
-  geometry_msgs::PoseArray msg_obj_poses;
-  //ros::ServiceClient planning_scene_service_;
+  ros::Subscriber sub_obj_coll_;
+  ros::Publisher pub_obj_poses_, pub_obj_pose_;
+  geometry_msgs::PoseStamped msg_obj_pose_;
+  geometry_msgs::PoseArray msg_obj_poses_;
 
-  std::vector<geometry_msgs::Pose> poses_validated;
-  std::vector<geometry_msgs::Pose> poses_failed;
+  geometry_msgs::Pose pose_default_, pose_default_r_, pose_zero_;
 
-  geometry_msgs::Pose pose_default, pose_default_r;
+  std::vector <geometry_msgs::Pose> stat_poses_success_;
 
-  std::vector <geometry_msgs::Pose> stat_poses_success;
+  ros::Publisher pub_obj_moveit_;
 
-  ros::Publisher pub_obj_moveit;
 };
 }
 

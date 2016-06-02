@@ -16,66 +16,84 @@ Posture::Posture(const std::string robot_name, const std::string eef_name, const
       pose_head_down[1] = 0.35;
   pose_head_zero.resize(pose_head_down.size(), 0.0);
 
-  //set of joint for arms
+  //get the arm joints
   moveit::planning_interface::MoveGroup move_group_plan(group_name);
-  //get current
-  move_group_plan.getCurrentState()->copyJointGroupPositions(move_group_plan.getCurrentState()->getRobotModel()->getJointModelGroup(move_group_plan.getName()), pose_arm_left_init);
+  std::vector<double> pose_arm_left_init;
+  move_group_plan.getCurrentState()->copyJointGroupPositions(
+              move_group_plan.getCurrentState()->getRobotModel()->getJointModelGroup(
+                  move_group_plan.getName()), pose_arm_left_init);
 
-  //ROS_INFO_STREAM("pose_arm_left_init.size() "<< pose_arm_left_init.size());
+  //initialize the left arm
+  pose_arm_left.resize(4);
+  pose_arm_left[0] = pose_arm_left_init;
+  for (int i=1; i<pose_arm_left.size(); ++i)
+    pose_arm_left[i].resize(pose_arm_left[0].size(), 0.0);
 
-  if ((robot_name == "romeo") && (pose_arm_left_init.size() >= 6))
+  if ((robot_name == "romeo") && (pose_arm_left[0].size() >= 6))
   {
-    pose_arm_left_init[0] = 1.74;
-    pose_arm_left_init[1] = 0.75;
-    pose_arm_left_init[2] = -2.08;
-    pose_arm_left_init[3] = -1.15;
-    pose_arm_left_init[4] = -0.43;
-    pose_arm_left_init[5] = 0.17;
-    if (pose_arm_left_init.size() >= 7)
-      pose_arm_left_init[6] = 0.0;
+    pose_arm_left[0].assign(pose_arm_left[0].size(), 0.0);
+
+    pose_arm_left[1][0] = 1.74;
+    pose_arm_left[1][1] = 0.75;
+    pose_arm_left[1][2] = -2.08;
+    pose_arm_left[1][3] = -1.15;
+    pose_arm_left[1][4] = -0.43;
+    pose_arm_left[1][5] = 0.17;
+
+    pose_arm_left[2][0] = 1.0799225568771362;
+    pose_arm_left[2][1] = 0.6565437912940979;
+    pose_arm_left[2][2] = -0.8390874862670898;
+    pose_arm_left[2][3] = -0.607456386089325;
+    pose_arm_left[2][4] = -0.6672816872596741;
+    pose_arm_left[2][5] = 0.02454369328916073;
+
+    pose_arm_left[3][0] = 1.872990608215332;
+    pose_arm_left[3][1] = 0.5553010702133179;
+    pose_arm_left[3][2] = -1.9895731210708618;
+    pose_arm_left[3][3] = -1.052310824394226;
+    pose_arm_left[3][4] = -0.6703495979309082;
+    pose_arm_left[3][5] = 0.02147573232650757;
   }
-  else if (pose_arm_left_init.size() >= 3)
-  {
-    pose_arm_left_init[0] = 1.7;
-    pose_arm_left_init[1] = 0.3;
-    pose_arm_left_init[2] = -1.3;
-    //pose_arm_left_init[3] = -0.1;
-  }
 
-  pose_arm_right_init.resize(pose_arm_left_init.size(), 0.0);
-  for (int i=0; i<pose_arm_left_init.size(); ++i)
-    pose_arm_right_init[i] = pose_arm_left_init[i];
-  if (pose_arm_right_init.size() >= 3)
+  //initialize the right arm
+  pose_arm_right = std::vector< std::vector<double> >(pose_arm_left);
+  for (int i=0; i<pose_arm_right.size(); ++i)
   {
-    pose_arm_right_init[1] *= -1;
-    pose_arm_right_init[2] *= -1;
-
-    if ((robot_name == "romeo") && (pose_arm_left_init.size() >= 6))
+    if (pose_arm_right[i].size() >= 3)
     {
-      pose_arm_right_init[3] *= -1;
-      pose_arm_right_init[4] *= -1;
+      pose_arm_right[i][1] *= -1;
+      pose_arm_right[i][2] *= -1;
+    }
+    if ((robot_name == "romeo") && (pose_arm_right[i].size() >= 6))
+    {
+      pose_arm_right[i][3] *= -1;
+      pose_arm_right[i][4] *= -1;
     }
   }
-
-  /*std::cout << "------------- pose_arm_left_init" << std::endl;
-  for (int i=0; i<pose_arm_left_init.size(); ++i)
-    std::cout << pose_arm_left_init[i] << " " << pose_arm_right_init[i] << std::endl;*/
-
-  pose_arm_zero.resize(pose_arm_left_init.size(), 0.0);
 
   //get the current set of joint values for the eef
   std::vector<double> pose_hand;
   moveit::planning_interface::MoveGroup move_group_eef(eef_name);
   move_group_eef.getCurrentState()->copyJointGroupPositions(move_group_eef.getCurrentState()->getRobotModel()->getJointModelGroup(move_group_eef.getName()), pose_hand);
-  pose_hand_close.resize(pose_hand.size(), 0.0); //0.0
-  pose_hand_open.resize(pose_hand.size(), 0.8); //0.8
-  if (pose_hand_open.size() > 0)
-    pose_hand_open[0] = 0.0;
-  if (pose_hand_close.size() > 0)
-    pose_hand_close[0] = 0.0;
+  pose_hand_close.resize(pose_hand.size(), 0.0);
+  pose_hand_open.resize(pose_hand.size(), 0.0);
+  initHandPoseOpen(0.0);
+  initHandPoseClose(0.8);
 
   /*double joints_arm_pregrasp[] = {0.8, 0.5, -0.62, -1.0, -0.96, -0.12}; //, 0.0, 0.80
   pose_arm_left_pregrasp = std::vector<double>(joints_arm_pregrasp, joints_arm_pregrasp + sizeof(joints_arm_pregrasp) / sizeof(double) );*/
+}
+
+void Posture::initHandPoseOpen(const double &value){
+  pose_hand_open.assign(pose_hand_open.size(), value);
+  if (pose_hand_open.size() > 0)
+    pose_hand_open[0] = 0.0;
+}
+
+void Posture::initHandPoseClose(const double &value){
+  pose_hand_close.assign(pose_hand_close.size(), value);
+  if (pose_hand_close.size() > 0)
+    pose_hand_close[0] = 0.0;
 }
 
 bool Posture::poseHeadZero(){
@@ -86,31 +104,32 @@ bool Posture::poseHeadDown(){
   goToPose("head", &pose_head_down);
 }
 
-bool Posture::poseHandZero(const std::string end_eff, const std::string group)
-{
-  goToPose(end_eff, &pose_hand_open);
-  return goToPose(group, &pose_arm_zero);
-}
-
-bool Posture::poseHandInit(const std::string &end_eff, const std::string &group, const std::string &arm)
-{
-  //end-effector first
-  goToPose(end_eff, &pose_hand_open);
-
-  bool success = false;
-  if (arm == "right")
-    success = goToPose(group, &pose_arm_right_init);
-  else
-    success = goToPose(group, &pose_arm_left_init);
-  return success;
-}
-
 bool Posture::poseHand(const std::string &end_eff, const std::string &group, const std::string &arm, std::vector<double> *pose_hand)
 {
   //end-effector first
   goToPose(end_eff, &pose_hand_open);
 
   return goToPose(group, pose_hand);
+}
+
+bool Posture::poseHand(const std::string &end_eff, const std::string &group, const std::string &arm, const int &pose_id)
+{
+  //end-effector first
+  goToPose(end_eff, &pose_hand_open);
+
+  bool res = false;
+  if (arm == "right")
+  {
+    if (pose_id < pose_arm_right.size())
+      res = goToPose(group, &pose_arm_right[pose_id]);
+  }
+  else
+  {
+    if (pose_id < pose_arm_left.size())
+      res = goToPose(group, &pose_arm_left[pose_id]);
+  }
+
+  return res;
 }
 
 bool Posture::poseHandOpen(const std::string &end_eff)

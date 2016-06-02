@@ -94,18 +94,6 @@ int main(int argc, char **argv)
 
   // Check for verbose flag
   bool verbose = false;
-  /*if (argc > 1)
-  {
-    for (std::size_t i = 0; i < argc; ++i)
-    {
-      if (strcmp(argv[i], "--verbose") == 0)
-      {
-        ROS_INFO_STREAM_NAMED("main","Running in VERBOSE mode (slower)");
-        verbose = true;
-      }
-    }
-  }*/
-  //verbose = true;
 
   std::string robot_name("romeo");
   double test_step(0.0);

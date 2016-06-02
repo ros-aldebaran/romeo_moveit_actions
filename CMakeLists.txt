@@ -39,16 +39,15 @@ set(SRC
   src/action.cpp
   src/postures.cpp
   src/objprocessing.cpp
-  src/visualtools.cpp
   include/romeo_moveit_actions/simplepickplace.hpp
   include/romeo_moveit_actions/metablock.hpp
   include/romeo_moveit_actions/action.hpp
-  include/romeo_moveit_actions/custom_environment5.hpp
   include/romeo_moveit_actions/postures.hpp
   include/romeo_moveit_actions/tools.hpp
   include/romeo_moveit_actions/toolsForAction.hpp
+  include/romeo_moveit_actions/toolsObj.hpp
+  include/romeo_moveit_actions/toolsEvaluation.hpp
   include/romeo_moveit_actions/objprocessing.hpp
-  include/romeo_moveit_actions/visualtools.hpp
 )
 
 # Main executable

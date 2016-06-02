@@ -10,7 +10,7 @@
   <arg unless="$(arg verbose)" name="command_args" value="" />
   <arg     if="$(arg verbose)" name="command_args" value="true" />
   
-  <arg name="robot_name" default="pepper" />
+  <arg name="robot_name" default="romeo" />
   <arg name="test_step" default="0.0" />
   <arg name="x_min" default="0.0" />
   <arg name="x_max" default="0.0" />
@@ -20,12 +20,14 @@
   <arg name="z_max" default="0.0" />
   <arg name="left_arm_name" default="left" />
   <arg name="right_arm_name" default="right" />
+  <arg name="tolerance_min" default="0.1" />
 
   <!-- Launch pick and place -->
-  <node name="moveit_simple_actions_pepper" launch-prefix="$(arg launch_prefix)" pkg="romeo_moveit_actions"
+  <node name="moveit_simple_actions" launch-prefix="$(arg launch_prefix)" pkg="romeo_moveit_actions"
   type="romeo_moveit_actions" output="screen" args="$(arg command_args) --robot_name=$(arg robot_name) --test_step=$(arg test_step) --x_min=$(arg x_min) --x_max=$(arg x_max) --y_min=$(arg y_min) --y_max=$(arg y_max) --z_min=$(arg z_min) --z_max=$(arg z_max) --left_arm_name=$(arg left_arm_name) --right_arm_name=$(arg right_arm_name)">
-    <rosparam command="load" file="$(find pepper_moveit_config)/config/kinematics.yaml"/>
-    <rosparam command="load" file="$(find moveit_simple_grasps)/config/$(arg robot_name)_grasp_data.yaml"/>
+    <rosparam command="load" file="$(find romeo_moveit_config)/config/kinematics.yaml"/>
+    <rosparam command="load" file="$(find moveit_simple_grasps)/config/$(arg robot_name)_grasp_data_sim.yaml"/>
+    <param name="tolerance_min" value="$(arg tolerance_min)" />
   </node>
 
 </launch>

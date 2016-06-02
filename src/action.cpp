@@ -55,6 +55,15 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
                << " grasp_data.approach_retreat_min_dist_=" << grasp_data_.approach_retreat_min_dist_ << std::endl
                << " grasp_data_.grasp_depth_= " << grasp_data_.grasp_depth_ << std::endl;*/
 
+  if (grasp_data_.pre_grasp_posture_.points.size() > 0)
+    for (int i=0; i<grasp_data_.pre_grasp_posture_.joint_names.size(); ++i)
+    {
+      if ((grasp_data_.pre_grasp_posture_.joint_names[i] == "RHand") || (grasp_data_.pre_grasp_posture_.joint_names[i] == "LHand"))
+        posture.initHandPoseOpen(grasp_data_.pre_grasp_posture_.points[0].positions[i]);
+      if ((grasp_data_.grasp_posture_.joint_names[i] == "RHand") || (grasp_data_.grasp_posture_.joint_names[i] == "LHand"))
+        posture.initHandPoseClose(grasp_data_.grasp_posture_.points[0].positions[i]);
+    }
+
   visual_tools_ = visual_tools;
 
   //update visualization
@@ -78,8 +87,8 @@ bool Action::pickDefault(MetaBlock *block)
   std::vector<moveit_msgs::Grasp> grasps(1);
 
   moveit_msgs::Grasp g;
-  g.grasp_pose.header.frame_id = block->name; //"base_link";
-  g.grasp_pose.pose = block->start_pose;
+  g.grasp_pose.header.frame_id = block->name_; //"base_link";
+  g.grasp_pose.pose = block->start_pose_;
   g.grasp_pose.pose = grasp_data_.grasp_pose_to_eef_pose_;
 
   g.pre_grasp_approach.direction.header.frame_id = grasp_data_.ee_parent_link_; //"base_link"; //"LWristYaw_link"; //lscene->getPlanningFrame();
@@ -121,13 +130,13 @@ bool Action::pickDefault(MetaBlock *block)
 
     // an optional list of obstacles that we have semantic information about and that can be touched/pushed/moved in the course of grasping
     std::vector<std::string> allowed_touch_objects;
-    allowed_touch_objects.push_back(block->name);
+    allowed_touch_objects.push_back(block->name_);
 
     // Add this list to all grasps
     for (std::size_t i = 0; i < grasps.size(); ++i)
       grasps[i].allowed_touch_objects = allowed_touch_objects;
 
-    if (move_group_->pick(block->name, grasps)){
+    if (move_group_->pick(block->name_, grasps)){
       done = true;
 
       return true;
@@ -176,7 +185,7 @@ bool Action::graspPlan(MetaBlock *block, const std::string surface_name) //compu
   bool success(false);
 
   if (verbose_)
-    ROS_INFO_STREAM("Planning " << block->name << " at pose " << block->start_pose);
+    ROS_INFO_STREAM("Planning " << block->name_ << " at pose " << block->start_pose_);
 
   double tolerance_cur =  move_group_->getGoalPositionTolerance();
   move_group_->setGoalTolerance(0.1);//0.05
@@ -196,7 +205,7 @@ bool Action::graspPlan(MetaBlock *block, const std::string surface_name) //compu
   if (!success)
     current_plan_.reset();
   else
-    publishPlanInfo(*current_plan_, block->start_pose);
+    publishPlanInfo(*current_plan_, block->start_pose_);
 
   if (verbose_ && success)
       ROS_INFO_STREAM("Grasp planning success! \n\n");
@@ -225,27 +234,22 @@ bool Action::poseHeadDown()
   return posture.poseHeadDown();
 }
 
-bool Action::poseHandInit()
+bool Action::poseHand(const int pose_id)
 {
-  double tolerance_cur =  move_group_->getGoalPositionTolerance();
+  double tolerance_cur = move_group_->getGoalPositionTolerance();
   move_group_->setGoalTolerance(0.05);
-  bool res = posture.poseHandInit(end_eff, plan_group, arm);
+  bool res = posture.poseHand(end_eff, plan_group, arm, pose_id);
   move_group_->setGoalTolerance(tolerance_cur);
   return res;
 }
 
 bool Action::poseHand(std::vector<double> *pose_hand)
 {
-  double tolerance_cur =  move_group_->getGoalPositionTolerance();
+  double tolerance_cur = move_group_->getGoalPositionTolerance();
   move_group_->setGoalTolerance(0.05);
   bool res = posture.poseHand(end_eff, plan_group, arm, pose_hand);
   move_group_->setGoalTolerance(tolerance_cur);
   return res;
-}
-
-bool Action::poseHandZero()
-{
-  return posture.poseHandZero(end_eff, plan_group);
 }
 
 void Action::poseHandOpen()
@@ -256,11 +260,6 @@ void Action::poseHandOpen()
 void Action::poseHandClose()
 {
   posture.poseHandClose(end_eff);
-}
-
-bool Action::reachInitPose()
-{
-  return reachAction(pose_init);
 }
 
 geometry_msgs::Pose Action::getPose()
@@ -293,7 +292,7 @@ void Action::setTolerance(const double value)
 float Action::reachGrasp(MetaBlock *block, const std::string surface_name)
 {
   //if (verbose_)
-    ROS_INFO_STREAM("Reaching at distance = " << block->start_pose.position.x << " " << block->start_pose.position.y << " " << block->start_pose.position.z);
+    ROS_INFO_STREAM("Reaching at distance = " << block->start_pose_.position.x << " " << block->start_pose_.position.y << " " << block->start_pose_.position.z);
 
   //clean object temporally or allow to touch it
   /*visual_tools_->cleanupCO(block->name);
@@ -311,8 +310,8 @@ std::cout << "attach_object_msg.touch_links.size() " << attach_object_msg.touch_
   approach_grasp_acm->setEntry(goal.target_name, attach_object_msg.touch_links, true);
 */
 
-  geometry_msgs::Pose pose = block->start_pose;
-  pose.position.z += block->size_l/2.0;
+  geometry_msgs::Pose pose = block->start_pose_;
+  pose.position.z += block->size_y_/2.0;
 
   //reach the object
   if (!reachPregrasp(pose, surface_name))
@@ -417,7 +416,7 @@ bool Action::graspPlanAllPossible(MetaBlock *block, const std::string surface_na
   bool success(false);
 
   if (verbose_)
-    ROS_INFO_STREAM("Planning all possible grasps to " << block->start_pose);
+    ROS_INFO_STREAM("Planning all possible grasps to " << block->start_pose_);
 
   //move_group_->setPoseReferenceFrame("LWristYaw_link");
   //move_group_->setStartState(*move_group_->getCurrentState());
@@ -460,7 +459,7 @@ bool Action::graspPlanAllPossible(MetaBlock *block, const std::string surface_na
 std::vector<moveit_msgs::Grasp> Action::generateGrasps(MetaBlock *block)
 {
   std::vector<moveit_msgs::Grasp> grasps;
-  if (block->name.empty())
+  if (block->name_.empty())
   {
     ROS_INFO_STREAM("No object choosen to grasp");
     return grasps;
@@ -469,8 +468,8 @@ std::vector<moveit_msgs::Grasp> Action::generateGrasps(MetaBlock *block)
   if (verbose_)
     visual_tools_->deleteAllMarkers();
 
-  geometry_msgs::Pose pose = block->start_pose;
-  pose.position.z += block->size_l/2.0;
+  geometry_msgs::Pose pose = block->start_pose_;
+  pose.position.z += block->size_y_/2.0;
   simple_grasps_->generateBlockGrasps(pose, grasp_data_, grasps );
 
   if (verbose_)
@@ -485,7 +484,7 @@ std::vector<moveit_msgs::Grasp> Action::generateGrasps(MetaBlock *block)
   {
     // an optional list of obstacles that we have semantic information about and that can be touched/pushed/moved in the course of grasping
     std::vector<std::string> allowed_touch_objects(1);
-    allowed_touch_objects[0] = block->name;
+    allowed_touch_objects[0] = block->name_;
     for (std::size_t i = 0; i < grasps.size(); ++i)
       grasps[i].allowed_touch_objects = allowed_touch_objects;
   }
@@ -517,7 +516,7 @@ bool Action::pickAction(MetaBlock *block,
 {
   bool success(false);
   //if (verbose_)
-    ROS_INFO_STREAM("Pick at pose " << block->start_pose.position.x << " " << block->start_pose.position.y << " " << block->start_pose.position.z);
+    ROS_INFO_STREAM("Pick at pose " << block->start_pose_.position.x << " " << block->start_pose_.position.y << " " << block->start_pose_.position.z);
 
   if (attempts_nbr == 0)
     attempts_nbr = attempts_max_;
@@ -544,7 +543,7 @@ bool Action::pickAction(MetaBlock *block,
     while (!success && (attempts < attempts_nbr))
     {
       move_group_->setGoalTolerance(tolerance);//0.05 //TODO to check
-      success = move_group_->pick(block->name, grasps);
+      success = move_group_->pick(block->name_, grasps);
 
       if (!success)
       {
@@ -567,7 +566,7 @@ bool Action::pickAction(MetaBlock *block,
 bool Action::placeAction(MetaBlock *block, const std::string surface_name)
 {
   if (verbose_)
-    ROS_INFO_STREAM("Placing " << block->name << " at pose " << block->goal_pose);
+    ROS_INFO_STREAM("Placing " << block->name_ << " at pose " << block->goal_pose_);
 
   // Prevent collision with table
   if (!surface_name.empty())
@@ -583,7 +582,7 @@ bool Action::placeAction(MetaBlock *block, const std::string surface_name)
   // Create 360 degrees of place location rotated around a center
   //for (double angle = 0; angle < 2*M_PI; angle += M_PI/2)
   //{
-    pose_stamped.pose = block->goal_pose;
+    pose_stamped.pose = block->goal_pose_;
 
     // Create new place location
     moveit_msgs::PlaceLocation place_loc;
@@ -615,7 +614,7 @@ bool Action::placeAction(MetaBlock *block, const std::string surface_name)
 
   move_group_->setPlannerId("RRTConnectkConfigDefault");
 
-  bool success = move_group_->place(block->name, place_locations);
+  bool success = move_group_->place(block->name_, place_locations);
   if (verbose_)
   {
     if (success)

@@ -13,39 +13,31 @@ class MetaBlock
 {
 public:
   MetaBlock(const std::string name,
-            const double start_x,
-            const double start_y,
-            const double start_z,
-            const double orien_x,
-            const double orien_y,
-            const double orien_z,
-            const double orien_w,
-            const uint shapeType,
-            const double size,
-            const double size_r);
-  MetaBlock(const std::string name,
-            const ros::Time timestamp,
             const geometry_msgs::Pose start_pose,
             const uint shapeType,
-            const double size,
-            const double size_l);
+            const double size_x,
+            const double size_y,
+            const double size_z,
+            ros::Time timestamp=ros::Time::now());
   MetaBlock(const std::string name,
-            const ros::Time timestamp,
             const geometry_msgs::Pose start_pose,
             const shape_msgs::Mesh mesh,
-            const object_recognition_msgs::ObjectType type);
+            const object_recognition_msgs::ObjectType type,
+            ros::Time timestamp=ros::Time::now());
   void updatePose(const geometry_msgs::Pose start_pose);
   void setRndPose();
 
-  std::string name;
-  double size;
-  double size_l;
-  ros::Time timestamp;
-  geometry_msgs::Pose start_pose;
-  geometry_msgs::Pose goal_pose;
-  shape_msgs::SolidPrimitive shape;
-  shape_msgs::Mesh mesh;
-  object_recognition_msgs::ObjectType type;
+  std::string name_;
+  geometry_msgs::Pose start_pose_;
+  double size_x_;
+  double size_y_;
+  double size_z_;
+  ros::Time timestamp_;
+  geometry_msgs::Pose goal_pose_;
+  shape_msgs::SolidPrimitive shape_;
+  shape_msgs::Mesh mesh_;
+  object_recognition_msgs::ObjectType type_;
+  //moveit_msgs::CollisionObject coll_obj_;
 };
 
 
