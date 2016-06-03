@@ -21,14 +21,14 @@ find_package(Boost QUIET COMPONENTS program_options)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS geometric_shapes
+  CATKIN_DEPENDS roscpp geometry_msgs geometric_shapes std_msgs moveit_ros_planning moveit_ros_planning_interface moveit_visual_tools moveit_simple_grasps object_recognition_msgs
 )
 
 ###########
 ## Build ##
 ###########
 
-include_directories(include/romeo_moveit_actions ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -39,16 +39,15 @@ set(SRC
   src/action.cpp
   src/postures.cpp
   src/objprocessing.cpp
-  src/visualtools.cpp
   include/romeo_moveit_actions/simplepickplace.hpp
   include/romeo_moveit_actions/metablock.hpp
   include/romeo_moveit_actions/action.hpp
-  include/romeo_moveit_actions/custom_environment5.hpp
   include/romeo_moveit_actions/postures.hpp
   include/romeo_moveit_actions/tools.hpp
   include/romeo_moveit_actions/toolsForAction.hpp
+  include/romeo_moveit_actions/toolsObj.hpp
+  include/romeo_moveit_actions/toolsEvaluation.hpp
   include/romeo_moveit_actions/objprocessing.hpp
-  include/romeo_moveit_actions/visualtools.hpp
 )
 
 # Main executable

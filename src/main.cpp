@@ -1,5 +1,6 @@
 #include <boost/program_options.hpp>
-#include <simplepickplace.hpp>
+
+#include "romeo_moveit_actions/simplepickplace.hpp"
 
 void parse_command_line(int argc, char ** argv,
                         std::string &robot_name_,
@@ -93,18 +94,6 @@ int main(int argc, char **argv)
 
   // Check for verbose flag
   bool verbose = false;
-  /*if (argc > 1)
-  {
-    for (std::size_t i = 0; i < argc; ++i)
-    {
-      if (strcmp(argv[i], "--verbose") == 0)
-      {
-        ROS_INFO_STREAM_NAMED("main","Running in VERBOSE mode (slower)");
-        verbose = true;
-      }
-    }
-  }*/
-  //verbose = true;
 
   std::string robot_name("romeo");
   double test_step(0.0);

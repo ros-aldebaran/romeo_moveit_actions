@@ -35,6 +35,7 @@
   <run_depend>moveit_plugins</run_depend>
   <run_depend>moveit_simple_controller_manager</run_depend>
   <run_depend>moveit_simple_grasps</run_depend>
+  <run_depend>moveit_visual_tools</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>geometric_shapes</run_depend>
   <run_depend>roscpp</run_depend>
