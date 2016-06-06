@@ -89,10 +89,14 @@ namespace moveit_simple_actions
     //create a table
     double table_height = -floor_to_base_height_ + (pose_default_.position.z-block_size_y/2.0);
     double table_width = std::fabs(pose_default_r_.position.y*2.0) + block_size_x/2.0;
-    geometry_msgs::Pose pose;
-    setPose(&pose, 0.45, 0.0, floor_to_base_height_ + table_height/2.0);
-    blocks_surfaces_.push_back(MetaBlock("table", pose, shape_msgs::SolidPrimitive::BOX, 0.35, table_width, table_height));
-    support_surface_name_ = blocks_surfaces_.front().name_;
+    double table_depth = 0.35;
+    geometry_msgs::Pose table_pose;
+    setPose(&table_pose, pose_default_r_.position.x+table_depth/2.0, 0.0, floor_to_base_height_ + table_height/2.0);
+    //if (robot_name_ == "romeo")
+    {
+      blocks_surfaces_.push_back(MetaBlock("table", table_pose, shape_msgs::SolidPrimitive::BOX, 0.35, table_width, table_height));
+      support_surface_name_ = blocks_surfaces_.front().name_;
+    }
     env_shown_ = false;
 
     // objects related initialization
@@ -132,7 +136,7 @@ namespace moveit_simple_actions
     //if (robot_name_ == "romeo")
     {
       cleanObjects(&blocks_surfaces_, false);
-      pub_obj_moveit_.publish(publishCollisionBlock(&blocks_surfaces_.front()));
+      pub_obj_moveit_.publish(blocks_surfaces_.front().collObj_);
       env_shown_ = true;
     }
 
@@ -155,7 +159,7 @@ namespace moveit_simple_actions
     blocks_.push_back(block);
     msg_obj_pose_.pose = block.start_pose_;
     pub_obj_pose_.publish(msg_obj_pose_);
-    pub_obj_moveit_.publish(publishCollisionBlock(&blocks_.back()));
+    pub_obj_moveit_.publish(blocks_.back().collObj_);
   }
 
   bool SimplePickPlace::startRoutine()
@@ -234,7 +238,7 @@ namespace moveit_simple_actions
           if ((block_id >= 0) && (block_id < blocks_.size()))
           {
             action->move_group_->detachObject(blocks_[block_id].name_);
-            pub_obj_moveit_.publish(publishCollisionBlock(&blocks_[block_id]));
+            pub_obj_moveit_.publish(blocks_[block_id].collObj_);
             ros::Duration(0.1).sleep();
           }
           action->poseHand(0);
@@ -246,7 +250,7 @@ namespace moveit_simple_actions
           if ((block_id >= 0) && (block_id < blocks_.size()))
           {
             action->move_group_->detachObject(blocks_[block_id].name_);
-            pub_obj_moveit_.publish(publishCollisionBlock(&blocks_[block_id]));
+            pub_obj_moveit_.publish(blocks_[block_id].collObj_);
             ros::Duration(0.1).sleep();
           }
           action->poseHand(1);
@@ -258,7 +262,7 @@ namespace moveit_simple_actions
           if ((block_id >= 0) && (block_id < blocks_.size()))
           {
             action->move_group_->detachObject(blocks_[block_id].name_);
-            pub_obj_moveit_.publish(publishCollisionBlock(&blocks_[block_id]));
+            pub_obj_moveit_.publish(blocks_[block_id].collObj_);
             ros::Duration(0.1).sleep();
           }
           action->poseHand(2);
@@ -270,7 +274,7 @@ namespace moveit_simple_actions
           if ((block_id >= 0) && (block_id < blocks_.size()))
           {
             action->move_group_->detachObject(blocks_[block_id].name_);
-            pub_obj_moveit_.publish(publishCollisionBlock(&blocks_[block_id]));
+            pub_obj_moveit_.publish(blocks_[block_id].collObj_);
             ros::Duration(0.1).sleep();
           }
           action->poseHand(3);
@@ -315,7 +319,7 @@ namespace moveit_simple_actions
               //if (!msg.meshes.empty())
                 visual_tools_->processCollisionObjectMsg(msg);
               /*else
-                pub_obj_moveit_.publish(publishCollisionBlock(&(*block)));*/
+                pub_obj_moveit_.publish(block->collObj_);*/
             }
           }
         }
@@ -361,7 +365,11 @@ namespace moveit_simple_actions
         else if ((block_id != -1) && (actionName == "u")) //key 'u' //reach and grasp
         {
           //TODO: do not remove an object but allow a collision to it
-          visual_tools_->cleanupCO(blocks_[block_id].name_);
+          //visual_tools_->cleanupCO(blocks_[block_id].name_);
+          geometry_msgs::Pose pose = blocks_[block_id].start_pose_;
+          pose.position.y = 50;
+          publishCollisionObject(&blocks_[block_id], pose);
+          ros::Duration(0.2).sleep();
 
           float dist = action->reachGrasp(&blocks_[block_id], support_surface_name_);
           //if not succeded then try with another arm
@@ -371,12 +379,13 @@ namespace moveit_simple_actions
             dist = action->reachGrasp(&blocks_[block_id], support_surface_name_);
           }
 
+          publishCollisionObject(&blocks_[block_id]);
           if (dist < 0.2)
           {
             action->move_group_->attachObject(blocks_[block_id].name_, action->grasp_data_.ee_group_);
             action->poseHandClose();
           }
-          resetBlock(&blocks_[block_id]);
+          //resetBlock(&blocks_[block_id]);
         }
         else if ((block_id != -1) && (actionName == "pregrasp")) //key 'x' //reach the pregrasp pose
         {
@@ -425,7 +434,7 @@ namespace moveit_simple_actions
         {
           blocks_surfaces_.front().size_z_ = promptUserValue("give the table height");
           blocks_surfaces_.front().start_pose_.position.z = floor_to_base_height_ + blocks_surfaces_.front().size_z_/2.0;
-          pub_obj_moveit_.publish(publishCollisionBlock(&blocks_surfaces_.front()));
+          pub_obj_moveit_.publish(blocks_surfaces_.front().collObj_);
         }
         else if (actionName == "t") //clean the scene
         {
@@ -438,7 +447,7 @@ namespace moveit_simple_actions
           }
           else
           {
-            pub_obj_moveit_.publish(publishCollisionBlock(&blocks_surfaces_.front()));
+            pub_obj_moveit_.publish(blocks_surfaces_.front().collObj_);
             env_shown_ = true;
           }
         }
@@ -545,7 +554,7 @@ ROS_INFO_STREAM("--- cleaning objects");
 
         // Remove collision object
         //visual_tools_->cleanupCO(block->name_);
-        pub_obj_moveit_.publish(publishCollisionBlock(&(*block)));
+        pub_obj_moveit_.publish(block->collObj_);
       }
     }
 
@@ -601,23 +610,21 @@ ROS_INFO_STREAM("--- cleaning objects");
     // Remove/Add collision object
     //visual_tools_->cleanupCO(block->name_);
     //visual_tools_->processCollisionObjectMsg(wrapToCollisionObject(block));
-    pub_obj_moveit_.publish(publishCollisionBlock(block));
+    pub_obj_moveit_.publish(block->collObj_);
   }
 
-  moveit_msgs::CollisionObject SimplePickPlace::publishCollisionBlock(MetaBlock *block,
-                                                     const rviz_visual_tools::colors color)
+  void SimplePickPlace::publishCollisionObject(MetaBlock *block, const geometry_msgs::Pose &pose)
   {
-      moveit_msgs::CollisionObject collision_obj;
-      collision_obj.header.stamp = ros::Time::now();
-      collision_obj.header.frame_id = base_frame_;
-      collision_obj.id = block->name_;
-      collision_obj.operation = moveit_msgs::CollisionObject::ADD;
-      collision_obj.primitives.resize(1);
-      if (block->shape_.dimensions.size() > 0)
-        collision_obj.primitives[0] = block->shape_;
-      collision_obj.primitive_poses.resize(1);
-      collision_obj.primitive_poses[0] = block->start_pose_;
-      return collision_obj;
+      if (block->collObj_.primitive_poses.size() > 0)
+      {
+        moveit_msgs::CollisionObject collObj = block->collObj_;
+        collObj.primitive_poses[0] = pose;
+        pub_obj_moveit_.publish(collObj);
+      }
+  }
+  void SimplePickPlace::publishCollisionObject(MetaBlock *block)
+  {
+     pub_obj_moveit_.publish(block->collObj_);
   }
 
   void SimplePickPlace::getCollisionObjects(const moveit_msgs::CollisionObject::ConstPtr& msg)

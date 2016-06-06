@@ -34,8 +34,8 @@ public:
   void getCollisionObjects(const moveit_msgs::CollisionObject::ConstPtr& msg);
   void cleanObjects(std::vector<MetaBlock> *objects, const bool list_erase=true);
   moveit_msgs::CollisionObject wrapToCollisionObject(MetaBlock *block);
-  moveit_msgs::CollisionObject publishCollisionBlock(MetaBlock *block,
-                                                     const rviz_visual_tools::colors color=rviz_visual_tools::GREEN);
+  void publishCollisionObject(MetaBlock *block, const geometry_msgs::Pose &pose);
+  void publishCollisionObject(MetaBlock *block);
 
   //Evaluation in toolsEvaluation.hpp
   void testReach(const bool pickVsReach=true, bool test_poses_rnd=false);
@@ -86,7 +86,6 @@ public:
   std::vector<MetaBlock> blocks_;
   std::vector<MetaBlock> blocks_test_;
   std::vector<MetaBlock> blocks_surfaces_;
-  //std::vector<moveit_msgs::CollisionObject> obj_coll_;
 
   ros::Subscriber sub_obj_coll_;
   ros::Publisher pub_obj_poses_, pub_obj_pose_;
