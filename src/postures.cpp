@@ -28,8 +28,7 @@ Posture::Posture(const std::string robot_name, const std::string eef_name, const
   pose_arm_left[0] = pose_arm_left_init;
   for (int i=1; i<pose_arm_left.size(); ++i)
     pose_arm_left[i].resize(pose_arm_left[0].size(), 0.0);
-
-  if ((robot_name == "romeo") && (pose_arm_left[0].size() >= 6))
+  if (pose_arm_left[0].size() >= 5)
   {
     pose_arm_left[0].assign(pose_arm_left[0].size(), 0.0);
 
@@ -38,21 +37,24 @@ Posture::Posture(const std::string robot_name, const std::string eef_name, const
     pose_arm_left[1][2] = -2.08;
     pose_arm_left[1][3] = -1.15;
     pose_arm_left[1][4] = -0.43;
-    pose_arm_left[1][5] = 0.17;
+    if (pose_arm_left[0].size() >= 6)
+      pose_arm_left[1][5] = 0.17;
 
     pose_arm_left[2][0] = 1.0799225568771362;
     pose_arm_left[2][1] = 0.6565437912940979;
     pose_arm_left[2][2] = -0.8390874862670898;
     pose_arm_left[2][3] = -0.607456386089325;
     pose_arm_left[2][4] = -0.6672816872596741;
-    pose_arm_left[2][5] = 0.02454369328916073;
+    if (pose_arm_left[0].size() >= 6)
+      pose_arm_left[2][5] = 0.02454369328916073;
 
     pose_arm_left[3][0] = 1.872990608215332;
     pose_arm_left[3][1] = 0.5553010702133179;
     pose_arm_left[3][2] = -1.9895731210708618;
     pose_arm_left[3][3] = -1.052310824394226;
     pose_arm_left[3][4] = -0.6703495979309082;
-    pose_arm_left[3][5] = 0.02147573232650757;
+    if (pose_arm_left[0].size() >= 6)
+      pose_arm_left[3][5] = 0.02147573232650757;
   }
 
   //initialize the right arm
@@ -64,7 +66,7 @@ Posture::Posture(const std::string robot_name, const std::string eef_name, const
       pose_arm_right[i][1] *= -1;
       pose_arm_right[i][2] *= -1;
     }
-    if ((robot_name == "romeo") && (pose_arm_right[i].size() >= 6))
+    if (pose_arm_right[i].size() >= 5)
     {
       pose_arm_right[i][3] *= -1;
       pose_arm_right[i][4] *= -1;
