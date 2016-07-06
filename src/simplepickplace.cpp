@@ -91,7 +91,7 @@ namespace moveit_simple_actions
     double table_width = std::fabs(pose_default_r_.position.y*2.0) + block_size_x/2.0;
     double table_depth = 0.35;
     geometry_msgs::Pose table_pose;
-    setPose(&table_pose, pose_default_r_.position.x+table_depth/2.0, 0.0, floor_to_base_height_ + table_height/2.0);
+    setPose(&table_pose, pose_default_.position.x-block_size_x/2.0 + table_depth/2.0, 0.0,floor_to_base_height_ + table_height/2.0);
     //if (robot_name_ == "romeo")
     {
       blocks_surfaces_.push_back(MetaBlock("table", table_pose, shape_msgs::SolidPrimitive::BOX, 0.35, table_width, table_height));
@@ -237,7 +237,8 @@ namespace moveit_simple_actions
           // Remove the attached object and the collision object
           if ((block_id >= 0) && (block_id < blocks_.size()))
           {
-            action->move_group_->detachObject(blocks_[block_id].name_);
+            if(blocks_[block_id].name_ != support_surface_name_)
+              action->move_group_->detachObject(blocks_[block_id].name_);
             pub_obj_moveit_.publish(blocks_[block_id].collObj_);
             ros::Duration(0.1).sleep();
           }
@@ -249,7 +250,8 @@ namespace moveit_simple_actions
           // Remove the attached object and the collision object
           if ((block_id >= 0) && (block_id < blocks_.size()))
           {
-            action->move_group_->detachObject(blocks_[block_id].name_);
+            if(blocks_[block_id].name_ != support_surface_name_)
+              action->move_group_->detachObject(blocks_[block_id].name_);
             pub_obj_moveit_.publish(blocks_[block_id].collObj_);
             ros::Duration(0.1).sleep();
           }
@@ -261,7 +263,8 @@ namespace moveit_simple_actions
           // Remove the attached object and the collision object
           if ((block_id >= 0) && (block_id < blocks_.size()))
           {
-            action->move_group_->detachObject(blocks_[block_id].name_);
+            if(blocks_[block_id].name_ != support_surface_name_)
+              action->move_group_->detachObject(blocks_[block_id].name_);
             pub_obj_moveit_.publish(blocks_[block_id].collObj_);
             ros::Duration(0.1).sleep();
           }
@@ -549,8 +552,11 @@ ROS_INFO_STREAM("--- cleaning objects");
       if (block->timestamp_ < now)
       {
         // Remove attached object
-        action_left_->move_group_->detachObject(block->name_);
-        action_right_->move_group_->detachObject(block->name_);
+        if(block->name_ != support_surface_name_)
+        {
+          action_left_->move_group_->detachObject(block->name_);
+          action_right_->move_group_->detachObject(block->name_);
+        }
 
         // Remove collision object
         //visual_tools_->cleanupCO(block->name_);
@@ -604,8 +610,11 @@ ROS_INFO_STREAM("--- cleaning objects");
   void SimplePickPlace::resetBlock(MetaBlock *block)
   {
     // Remove attached object
-    action_left_->move_group_->detachObject(block->name_);
-    action_right_->move_group_->detachObject(block->name_);
+    if(block->name_ != support_surface_name_)
+    {
+      action_left_->move_group_->detachObject(block->name_);
+      action_right_->move_group_->detachObject(block->name_);
+    }
 
     // Remove/Add collision object
     //visual_tools_->cleanupCO(block->name_);
