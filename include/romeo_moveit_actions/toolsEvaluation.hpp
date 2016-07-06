@@ -153,7 +153,7 @@ int SimplePickPlace::testReachWithGenSingleHand(Action *action,
   {
     blocks_surfaces_.front().size_z_ = -floor_to_base_height_ + (z-block_size_y/2.0);
     blocks_surfaces_.front().start_pose_.position.z = floor_to_base_height_ + blocks_surfaces_.front().size_z_/2.0;
-    pub_obj_moveit_.publish(publishCollisionBlock(&blocks_surfaces_.front()));
+    pub_obj_moveit_.publish(blocks_surfaces_.front().collObj_);
     //updateTable(visual_tools_, -floor_to_base_height_ + (z-block_size_y/2.0));
     for (double y=y_min; y<=y_max; y+=y_step)
       for (double x=x_min_; x<=x_max_; x+=test_step_)
@@ -198,7 +198,7 @@ int SimplePickPlace::testReachWithGenSingleHand(Action *action,
 
   blocks_surfaces_.clear();
   blocks_surfaces_.push_back(table_init);
-  pub_obj_moveit_.publish(publishCollisionBlock(&blocks_surfaces_.front()));
+  pub_obj_moveit_.publish(blocks_surfaces_.front().collObj_);
 
   //return the hand
   action->poseHand(1);

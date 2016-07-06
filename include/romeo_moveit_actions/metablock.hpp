@@ -7,6 +7,8 @@
 #include <geometry_msgs/Pose.h>
 #include <geometric_shapes/solid_primitive_dims.h>
 
+#include <moveit_msgs/CollisionObject.h>
+
 #include <object_recognition_msgs/RecognizedObjectArray.h>
 
 class MetaBlock
@@ -24,7 +26,8 @@ public:
             const shape_msgs::Mesh mesh,
             const object_recognition_msgs::ObjectType type,
             ros::Time timestamp=ros::Time::now());
-  void updatePose(const geometry_msgs::Pose start_pose);
+  void updatePose(const geometry_msgs::Pose &start_pose);
+  void updatePoseVis(const geometry_msgs::Pose &start_pose);
   void setRndPose();
 
   std::string name_;
@@ -37,7 +40,7 @@ public:
   shape_msgs::SolidPrimitive shape_;
   shape_msgs::Mesh mesh_;
   object_recognition_msgs::ObjectType type_;
-  //moveit_msgs::CollisionObject coll_obj_;
+  moveit_msgs::CollisionObject collObj_;
 };
 
 

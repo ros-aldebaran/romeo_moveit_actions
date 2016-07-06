@@ -6,7 +6,7 @@
   <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
 
   <!-- Verbose mode -->
-  <arg name="verbose" default="false" />
+  <arg name="verbose" default="true" />
   <arg unless="$(arg verbose)" name="command_args" value="" />
   <arg     if="$(arg verbose)" name="command_args" value="true" />
   

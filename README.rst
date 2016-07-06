@@ -1,7 +1,7 @@
-Description
-===========
+romeo_moveit_actions
+====================
 
-This package allows to perform simple actions with MoveIt! configured for Romeo, NAO, and Pepper robots.
+The package allows to perform simple actions with MoveIt! configured for Romeo, NAO, and Pepper robots.
 
 It offers a set of functionalities, like: 
   * pick and place objects,
@@ -22,7 +22,7 @@ In case of compilin from source, install the following dependencies:
       * apt-get install ros-indigo-moveit-full
       * apt-get install ros-indigo-moveit-visual-tools
   * MoveIt! Grasp Generator 
-      * from source, the recommended branch: git clone -b romeo-dev --single-branch https://github.com/nlyubova/moveit_simple_grasps
+      * from source, the recommended branch: git clone https://github.com/nlyubova/moveit_simple_grasps -b romeo-dev
 
 Additionally, install a required robot description package and MoveIt! configuration, at minimum.
 
@@ -53,10 +53,10 @@ For Romeo real (not a simulator)
 --------------------------------
 If you are working with a real robot (not a simulator) then install the dcm-related package:
   * for Romeo: 
-      * apt-get install ros-indigo-romeo-dcm-bringup
-      * or from source https://github.com/ros-aldebaran/romeo_robot/tree/master/romeo_dcm
+      * from source https://github.com/ros-aldebaran/romeo_dcm
   * for Nao: 
-      * https://github.com/ros-aldebaran/nao_dcm_robot and https://github.com/ros-naoqi/nao_virtual
+      * sudo-apt-get install ros-indigo-nao-control or from source https://github.com/ros-naoqi/nao_virtual
+      * from source https://github.com/ros-aldebaran/nao_dcm_robot 
 
 Update the robot IP in the config-file (Romeo example):
 
@@ -82,7 +82,7 @@ Wait until the robot model is loaded and launch moveit_simple_actions:
 
 .. code-block:: bash
 
-    roslaunch romeo_moveit_actions actions_romeo.launch
+    roslaunch romeo_moveit_actions actions_romeo_sim.launch
 
 Welcome to the world of simple actions! Now, you can add virtual objects or detect real objects and reach/grasp/place them !
 
@@ -100,7 +100,7 @@ Launch MoveIt!:
 
 .. code-block:: bash
 
-    roslaunch romeo_moveit_config demo_real.launch
+    roslaunch romeo_moveit_config moveit_planner.launch
     
 Wait until the robot model is loaded and launch moveit_simple_actions:
     

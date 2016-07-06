@@ -44,6 +44,17 @@ MetaBlock::MetaBlock(const std::string name,
     solidPrimitive.dimensions[shape_msgs::SolidPrimitive::BOX_Z] = size_z;
   }
   shape_ = solidPrimitive;
+
+  //create collision object
+  collObj_.header.stamp = ros::Time::now();
+  collObj_.header.frame_id = "odom";
+  collObj_.id = name_;
+  collObj_.operation = moveit_msgs::CollisionObject::ADD;
+  collObj_.primitives.resize(1);
+  if (shape_.dimensions.size() > 0)
+    collObj_.primitives[0] = shape_;
+  collObj_.primitive_poses.resize(1);
+  collObj_.primitive_poses[0] = start_pose_;
 }
 
 MetaBlock::MetaBlock(const std::string name,
@@ -75,9 +86,17 @@ MetaBlock::MetaBlock(const std::string name,
   type_ = type;
 }
 
-void MetaBlock::updatePose(const geometry_msgs::Pose start_pose)
+void MetaBlock::updatePose(const geometry_msgs::Pose &start_pose)
 {
   start_pose_ = start_pose;
+  if (collObj_.primitive_poses.size() > 0)
+    collObj_.primitive_poses[0] = start_pose;
+}
+
+void MetaBlock::updatePoseVis(const geometry_msgs::Pose &start_pose)
+{
+  if (collObj_.primitive_poses.size() > 0)
+    collObj_.primitive_poses[0] = start_pose;
 }
 
 void MetaBlock::setRndPose()
@@ -86,19 +105,3 @@ void MetaBlock::setRndPose()
   start_pose_.position.y = float(rand() % 90)/100.0f - 0.45; //[-0.45;0.45]
   start_pose_.position.z = -0.23f + (float(rand() % 230)/1000.0f); //[-0.23;0.00]
 }
-
-/*moveit_msgs::CollisionObject MetaBlock::createCollObj(MetaBlock *block,
-                                                   const rviz_visual_tools::colors color)
-{
-    moveit_msgs::CollisionObject collision_obj;
-    collision_obj.header.stamp = ros::Time::now();
-    collision_obj.header.frame_id = base_frame_;
-    collision_obj.id = block->name_;
-    collision_obj.operation = moveit_msgs::CollisionObject::ADD;
-    collision_obj.primitives.resize(1);
-    if (block->shape_.dimensions.size() > 0)
-      collision_obj.primitives[0] = block->shape_;
-    collision_obj.primitive_poses.resize(1);
-    collision_obj.primitive_poses[0] = block->start_pose_;
-    return collision_obj;
-}*/

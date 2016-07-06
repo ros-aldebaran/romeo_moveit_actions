@@ -18,7 +18,7 @@
   <arg name="y_max" default="0.0" />
   <arg name="z_min" default="0.0" />
   <arg name="z_max" default="0.0" />
-  <arg name="left_arm_name" default="left" />
+  <arg name="left_arm_name" default="left_wrist" />
   <arg name="right_arm_name" default="right" />
   <arg name="tolerance_min" default="0.1" />
 
