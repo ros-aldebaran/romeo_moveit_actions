@@ -39,6 +39,7 @@ set(SRC
   src/action.cpp
   src/postures.cpp
   src/objprocessing.cpp
+  src/evaluation.cpp
   include/romeo_moveit_actions/simplepickplace.hpp
   include/romeo_moveit_actions/metablock.hpp
   include/romeo_moveit_actions/action.hpp
@@ -46,7 +47,7 @@ set(SRC
   include/romeo_moveit_actions/tools.hpp
   include/romeo_moveit_actions/toolsForAction.hpp
   include/romeo_moveit_actions/toolsObj.hpp
-  include/romeo_moveit_actions/toolsEvaluation.hpp
+  include/romeo_moveit_actions/evaluation.hpp
   include/romeo_moveit_actions/objprocessing.hpp
 )
 

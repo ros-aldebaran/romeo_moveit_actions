@@ -3,6 +3,9 @@
 
 #include <ros/ros.h>
 
+namespace moveit_simple_actions
+{
+
   void printTutorial(const std::string robot_name)//, const int state
   {
     std::string key = "u";
@@ -72,9 +75,9 @@
                           //<< " reachtop - reach the object from top, \n"
                           //<< " w - reach the init pose, \n"
 
-                          //<< " action - plan grasping the object, \n"
+                          //<< " plan - plan grasping the object, \n"
                           << " a - plan all possible grasps, \n"
-                          //<< " e - execute the planned action, \n"
+                          //<< " execute - execute the planned action, \n"
 
                           //<< " v - show the pregrasp pose, \n"
                           << " i - go to init pose, \n" //(i0, i1, i2, i3)
@@ -145,4 +148,5 @@
 
     return true;
   }
+}
 #endif // TOOLS_H

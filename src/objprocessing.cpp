@@ -1,6 +1,9 @@
 #include "romeo_moveit_actions/objprocessing.hpp"
 #include "romeo_moveit_actions/toolsForAction.hpp"
 
+namespace moveit_simple_actions
+{
+
 Objprocessing::Objprocessing(ros::NodeHandle *nh_):
   nh_(nh_),
   mesh_srv_name("get_object_info"),
@@ -29,16 +32,22 @@ Objprocessing::Objprocessing(ros::NodeHandle *nh_):
   }
 }
 
-bool Objprocessing::getMeshFromDB(object_recognition_msgs::GetObjectInformation &obj_info)
+std::vector <shape_msgs::Mesh> Objprocessing::getMeshFromDB(object_recognition_msgs::ObjectType type)
 {
+  std::vector <shape_msgs::Mesh> meshes;
+  object_recognition_msgs::GetObjectInformation obj_info;
+  obj_info.request.type = type;
+
   if (!found_srv_obj_info)
-    return false;
+    return meshes;
   if ( !get_model_mesh_srv_.call(obj_info) )
   {
     ROS_ERROR("The service get_object_info does not respond");
-    return false;
+    return meshes;
   }
-  return true;
+
+  meshes.push_back(obj_info.response.information.ground_truth_mesh);
+  return meshes;
 }
 
 bool Objprocessing::triggerObjectDetection()
@@ -80,4 +89,5 @@ bool Objprocessing::triggerObjectDetection()
   }
 //ROS_INFO_STREAM("triggerObjectDetection finished");
   return false;
+}
 }

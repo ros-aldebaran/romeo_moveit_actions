@@ -4,6 +4,9 @@
 // ROS
 #include <ros/ros.h>
 
+namespace moveit_simple_actions
+{
+
 template<typename T>
 void waitForAction(const T &action, const ros::NodeHandle &node_handle,
                    const ros::Duration &wait_for_server, const std::string &name)
@@ -41,6 +44,7 @@ void waitForAction(const T &action, const ros::NodeHandle &node_handle,
     throw std::runtime_error("Unable to connect to move_group action server within allotted time (2)");
   else
     ROS_DEBUG("Connected to '%s'", name.c_str());
+}
 }
 
 #endif // TOOLSFORACTION_HPP
