@@ -3,6 +3,9 @@
 
 #include "romeo_moveit_actions/metablock.hpp"
 
+namespace moveit_simple_actions
+{
+
 MetaBlock::MetaBlock(const std::string name,
           const geometry_msgs::Pose start_pose,
           const uint shapeType,
@@ -15,7 +18,8 @@ MetaBlock::MetaBlock(const std::string name,
     size_x_(size_x),
     size_y_(size_y),
     size_z_(size_z),
-    timestamp_(timestamp)
+    timestamp_(timestamp),
+    base_frame_("odom")
 {
   if (start_pose_.position.y < 0)
     start_pose_.orientation.y *= -1;
@@ -47,7 +51,7 @@ MetaBlock::MetaBlock(const std::string name,
 
   //create collision object
   collObj_.header.stamp = ros::Time::now();
-  collObj_.header.frame_id = "odom";
+  collObj_.header.frame_id = base_frame_;
   collObj_.id = name_;
   collObj_.operation = moveit_msgs::CollisionObject::ADD;
   collObj_.primitives.resize(1);
@@ -64,7 +68,8 @@ MetaBlock::MetaBlock(const std::string name,
           ros::Time timestamp):
     name_(name),
     start_pose_(start_pose),
-    timestamp_(timestamp)
+    timestamp_(timestamp),
+    base_frame_("odom")
 {
   start_pose_.orientation.x = -1.0;
   start_pose_.orientation.y = 0.0;
@@ -99,9 +104,21 @@ void MetaBlock::updatePoseVis(const geometry_msgs::Pose &start_pose)
     collObj_.primitive_poses[0] = start_pose;
 }
 
-void MetaBlock::setRndPose()
+moveit_msgs::CollisionObject MetaBlock::wrapToCollisionObject(const std::vector <shape_msgs::Mesh> &meshes)
 {
-  start_pose_.position.x = 0.35f + float(rand() % 150)/1000.0f; //[0.35;0.50]
-  start_pose_.position.y = float(rand() % 90)/100.0f - 0.45; //[-0.45;0.45]
-  start_pose_.position.z = -0.23f + (float(rand() % 230)/1000.0f); //[-0.23;0.00]
+  collObj_.header.stamp = ros::Time::now();
+
+  if (!meshes.empty())
+  {
+    collObj_.meshes.push_back(meshes[0]);
+    collObj_.mesh_poses.push_back(start_pose_);
+    //ROS_INFO_STREAM("-- mesh found: msg_obj_collision.meshes.size()=" << msg_obj_collision.meshes.size());
+  }
+  else
+    if (collObj_.primitive_poses.size() >0)
+      collObj_.primitive_poses[0] = start_pose_;
+
+  return collObj_;
+}
+
 }

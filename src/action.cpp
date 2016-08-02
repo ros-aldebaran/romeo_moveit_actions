@@ -16,33 +16,28 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
   tolerance_step_(0.1),
   max_velocity_scaling_factor_(0.6),
   flag_(FLAG_MOVE),
-  arm(arm),
-  end_eff(arm+"_hand"),
-  plan_group(arm+"_arm"),
-  posture(robot_name, end_eff, plan_group)
+  arm_(arm),
+  end_eff_(arm+"_hand"),
+  plan_group_(arm+"_arm"),
+  posture_(robot_name, end_eff_, plan_group_)/*,
+  visual_tools_(visual_tools) //TOCHECK*/
 {
-  /*ROS_INFO_STREAM("Arm: " << arm);
-  ROS_INFO_STREAM("End Effector: " << end_eff);
-  ROS_INFO_STREAM("Planning Group: " << plan_group);*/
+  /*ROS_INFO_STREAM("Arm: " << arm_);
+  ROS_INFO_STREAM("End Effector: " << end_eff_);
+  ROS_INFO_STREAM("Planning Group: " << plan_group_);*/
 
   nh_->getParam("tolerance_min", tolerance_min_);
 
   // Create MoveGroup for one of the planning groups
-  move_group_.reset(new move_group_interface::MoveGroup(plan_group));
+  move_group_.reset(new move_group_interface::MoveGroup(plan_group_));
   move_group_->setGoalTolerance(tolerance_min_);
   move_group_->setPlanningTime(planning_time_);
-
-  /*std::cout << "----- move_group_->getPlanningTime()=" << move_group_->getPlanningTime() << std::endl;
-  std::cout << "----- move_group_->getPlanningFrame()=" << move_group_->getPlanningFrame() << std::endl; //= odom
-  std::cout << "----- move_group_->getGoalPositionTolerance()= " << move_group_->getGoalPositionTolerance() << std::endl;
-  std::cout << "----- move_group_->getGoalOrientationTolerance()= " << move_group_->getGoalOrientationTolerance() << std::endl;*/
-  //move_group_->setPlanningTime(60.0); //30.0); //5
   //move_group_->setNumPlanningAttempts(10);
   /*move_group_->setGoalPositionTolerance(0.1); //0.0001
   move_group_->setGoalOrientationTolerance(0.1); //0.001*/
 
   // Load grasp generator
-  if (!grasp_data_.loadRobotGraspData(*nh_, end_eff))
+  if (!grasp_data_.loadRobotGraspData(*nh_, end_eff_))
   {
     ROS_ERROR("The grasp data cannot be loaded");
     ros::shutdown();
@@ -59,15 +54,10 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
     for (int i=0; i<grasp_data_.pre_grasp_posture_.joint_names.size(); ++i)
     {
       if ((grasp_data_.pre_grasp_posture_.joint_names[i] == "RHand") || (grasp_data_.pre_grasp_posture_.joint_names[i] == "LHand"))
-        posture.initHandPoseOpen(grasp_data_.pre_grasp_posture_.points[0].positions[i]);
+        posture_.initHandPoseOpen(grasp_data_.pre_grasp_posture_.points[0].positions[i]);
       if ((grasp_data_.grasp_posture_.joint_names[i] == "RHand") || (grasp_data_.grasp_posture_.joint_names[i] == "LHand"))
-        posture.initHandPoseClose(grasp_data_.grasp_posture_.points[0].positions[i]);
+        posture_.initHandPoseClose(grasp_data_.grasp_posture_.points[0].positions[i]);
     }
-
-  visual_tools_ = visual_tools;
-
-  //update visualization
-  //visual_tools_->loadEEMarker(grasp_data_.ee_group_, plan_group);
 
   // Load Grasp generator
   simple_grasps_.reset(new moveit_simple_grasps::SimpleGrasps(visual_tools_));
@@ -80,7 +70,7 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
   client_fk_ = nh_->serviceClient<moveit_msgs::GetPositionFK>("/compute_fk");
 }
 
-bool Action::pickDefault(MetaBlock *block)
+bool Action::pickDefault(MetaBlock *block, const std::string surface_name)
 {
   bool done = false;
 
@@ -126,7 +116,7 @@ bool Action::pickDefault(MetaBlock *block)
     grasps[0] = g;
 
     // Prevent collision with table
-    //move_group_->setSupportSurfaceName(SUPPORT_SURFACE3_NAME);
+    move_group_->setSupportSurfaceName(surface_name);
 
     // an optional list of obstacles that we have semantic information about and that can be touched/pushed/moved in the course of grasping
     std::vector<std::string> allowed_touch_objects;
@@ -164,20 +154,6 @@ bool Action::executeAction()//execute
   // If the function is called and FLAG_NO_MOVE return true
   // because only call executeAction if plan is success
   return success || flag_ == FLAG_NO_MOVE;
-}
-
-bool Action::graspPlanAndMove(MetaBlock *block, const std::string surface_name)
-{
-  bool success(false);
-
-  success = graspPlan(block, surface_name);
-  if (success)
-    success = executeAction();
-
-  if (verbose_ && success)
-      ROS_INFO_STREAM("Plan and move success! \n\n");
-
-  return success;
 }
 
 bool Action::graspPlan(MetaBlock *block, const std::string surface_name) //computePlanButtonClicked
@@ -226,40 +202,31 @@ float computeDistance(geometry_msgs::Pose goal, geometry_msgs::Pose current)
 
 bool Action::poseHeadZero()
 {
-  return posture.poseHeadZero();
+  return posture_.poseHeadZero();
 }
 
 bool Action::poseHeadDown()
 {
-  return posture.poseHeadDown();
+  return posture_.poseHeadDown();
 }
 
 bool Action::poseHand(const int pose_id)
 {
   double tolerance_cur = move_group_->getGoalPositionTolerance();
   move_group_->setGoalTolerance(0.05);
-  bool res = posture.poseHand(end_eff, plan_group, arm, pose_id);
-  move_group_->setGoalTolerance(tolerance_cur);
-  return res;
-}
-
-bool Action::poseHand(std::vector<double> *pose_hand)
-{
-  double tolerance_cur = move_group_->getGoalPositionTolerance();
-  move_group_->setGoalTolerance(0.05);
-  bool res = posture.poseHand(end_eff, plan_group, arm, pose_hand);
+  bool res = posture_.poseHand(end_eff_, plan_group_, arm_, pose_id);
   move_group_->setGoalTolerance(tolerance_cur);
   return res;
 }
 
 void Action::poseHandOpen()
 {
-  posture.poseHandOpen(end_eff);
+  posture_.poseHandOpen(end_eff_);
 }
 
 void Action::poseHandClose()
 {
-  posture.poseHandClose(end_eff);
+  posture_.poseHandClose(end_eff_);
 }
 
 geometry_msgs::Pose Action::getPose()
@@ -292,7 +259,7 @@ void Action::setTolerance(const double value)
 float Action::reachGrasp(MetaBlock *block, const std::string surface_name)
 {
   //if (verbose_)
-    ROS_INFO_STREAM("Reaching at distance = " << block->start_pose_.position.x << " " << block->start_pose_.position.y << " " << block->start_pose_.position.z);
+    ROS_INFO_STREAM("Reaching at position = " << block->start_pose_.position.x << " " << block->start_pose_.position.y << " " << block->start_pose_.position.z);
 
   //clean object temporally or allow to touch it
   /*visual_tools_->cleanupCO(block->name);
@@ -328,7 +295,7 @@ std::cout << "attach_object_msg.touch_links.size() " << attach_object_msg.touch_
   {
     //visual_tools_->processCollisionObjectMsg(wrapToCollisionObject(block));
     visual_tools_->attachCO(block->name, grasp_data_.ee_group_);
-    posture.poseHandClose(end_eff);
+    posture_.poseHandClose(end_eff_);
   }*/
 
   return dist;
@@ -534,7 +501,6 @@ bool Action::pickAction(MetaBlock *block,
 
     move_group_->setPlanningTime(planning_time); //30.0);
     //move_group_->setPlannerId("RRTConnectkConfigDefault");
-    //move_group_->setPlannerId("RRTConnect");
 
     double tolerance = tolerance_min_;
     int attempts = 0;
@@ -634,7 +600,7 @@ void Action::publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan, g
     //TODO: Check if using directly robotStatePtr changes the real robot
     int num_points = plan.trajectory_.joint_trajectory.points.size();
     moveit::core::RobotStatePtr robotStatePtr = move_group_->getCurrentState();
-    robotStatePtr->setJointGroupPositions(plan_group, plan.trajectory_.joint_trajectory.points[num_points-1].positions);
+    robotStatePtr->setJointGroupPositions(plan_group_, plan.trajectory_.joint_trajectory.points[num_points-1].positions);
     moveit_msgs::RobotState robotStateMsg;
     moveit::core::robotStateToRobotStateMsg(*robotStatePtr, robotStateMsg);
 
@@ -737,17 +703,18 @@ void Action::setFlag(int flag)
         ROS_WARN_STREAM("No value: " << flag << " for flag, will remain as: " << flag_);
 }
 
-/*void Action::filterGrasps(MetaBlock *block)
+void Action::detachObject(const std::string &block_name)
 {
-  if (verbose_)
-    ROS_INFO_STREAM("Picking " << block->name << " at pose " << block->start_pose);
+  move_group_->detachObject(block_name);
+}
 
-  std::vector<moveit_msgs::Grasp> grasps = generateGrasps(block);
+void Action::attachObject(const std::string &block_name)
+{
+  move_group_->attachObject(block_name, grasp_data_.ee_group_);
+}
 
-  if (grasps.size() > 0)
-  {
-    grasp_filter_.filterGrasps(grasps);
-  }
-}*/
-
+std::string Action::getBaseLink()
+{
+    return grasp_data_.base_link_;
+}
 }

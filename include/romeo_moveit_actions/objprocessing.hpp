@@ -11,13 +11,21 @@
 #include <object_recognition_msgs/GetObjectInformation.h>
 #include <object_recognition_msgs/ObjectRecognitionAction.h>
 
+namespace moveit_simple_actions
+{
+
 class Objprocessing
 {
 public:
   Objprocessing(ros::NodeHandle *nh_);
-  bool getMeshFromDB(object_recognition_msgs::GetObjectInformation &obj_info);
+
+  //get the object's mesh from the DB
+  std::vector <shape_msgs::Mesh> getMeshFromDB(object_recognition_msgs::ObjectType type);
+
+  //detect objects
   bool triggerObjectDetection();
 
+protected:
   ros::NodeHandle *nh_;
 
   std::string mesh_srv_name;
@@ -36,5 +44,7 @@ public:
   bool found_srv_obj_info;
   bool found_object_recognition_client_;
 };
+
+}
 
 #endif // OBJPROCESSING_HPP
