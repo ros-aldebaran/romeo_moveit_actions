@@ -193,9 +193,9 @@ bool Action::graspPlan(MetaBlock *block, const std::string surface_name) //compu
 
 float computeDistance(geometry_msgs::Pose goal, geometry_msgs::Pose current)
 {
-  float dist = (goal.position.x - current.position.x)*(goal.position.x - current.position.x)
-      + (goal.position.y - current.position.y) + (goal.position.y - current.position.y)
-      + (goal.position.z - current.position.z) + (goal.position.z - current.position.z);
+  float dist = sqrt( (goal.position.x - current.position.x)*(goal.position.x - current.position.x)
+      + (goal.position.y - current.position.y)*(goal.position.y - current.position.y)
+      + (goal.position.z - current.position.z)*(goal.position.z - current.position.z) );
 
   return dist;
 }
