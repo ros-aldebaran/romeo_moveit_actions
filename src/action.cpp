@@ -23,6 +23,8 @@
 
 #include "romeo_moveit_actions/action.hpp"
 
+typedef moveit::planning_interface::MoveGroupInterface MoveGroupInterface;
+
 namespace moveit_simple_actions
 {
 
@@ -53,7 +55,7 @@ Action::Action(ros::NodeHandle *nh,
     planning_time_ = 30.0;
 
   // Create MoveGroup for the planning group
-  move_group_.reset(new move_group_interface::MoveGroup(plan_group_));
+  move_group_.reset(new MoveGroupInterface(plan_group_));
   move_group_->setGoalTolerance(tolerance_min_);
   move_group_->setPlanningTime(planning_time_);
   move_group_->setPlannerId(planner_id_);
@@ -234,7 +236,7 @@ bool Action::graspPlan(MetaBlock *block, const std::string surface_name)
   move_group_->setPoseTargets(configureForPlanning(generateGrasps(block)),
                               move_group_->getEndEffectorLink().c_str());
 
-  current_plan_.reset(new moveit::planning_interface::MoveGroup::Plan());
+  current_plan_.reset(new MoveGroupInterface::Plan());
   success = move_group_->plan(*current_plan_);
   if (!success)
     current_plan_.reset();
@@ -517,7 +519,7 @@ bool Action::reachAction(geometry_msgs::Pose pose_target,
   if (!move_group_)
     return false;
 
-  current_plan_.reset(new moveit::planning_interface::MoveGroup::Plan());
+  current_plan_.reset(new MoveGroupInterface::Plan());
 
   // Prevent collision with table
   if (!surface_name.empty())
@@ -588,7 +590,7 @@ bool Action::graspPlanAllPossible(MetaBlock *block,
   std::vector<geometry_msgs::Pose> targets =
       configureForPlanning(generateGrasps(block));
 
-  moveit::planning_interface::MoveGroup::Plan plan;
+  MoveGroupInterface::Plan plan;
 
   if (targets.size() == 0)
     return false;
@@ -796,7 +798,7 @@ bool Action::placeAction(MetaBlock *block,
   return success;
 }
 
-void Action::publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan,
+void Action::publishPlanInfo(MoveGroupInterface::Plan plan,
                              geometry_msgs::Pose pose_target)
 {
   // Get the last position of the trajectory plan and transform that joints values

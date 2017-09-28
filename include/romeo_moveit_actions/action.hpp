@@ -21,7 +21,7 @@
 #include <ros/ros.h>
 
 // MoveIt!
-#include <moveit/move_group_interface/move_group.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 
 // Grasp generation
 #include <moveit_simple_grasps/simple_grasps.h>
@@ -39,6 +39,8 @@
 
 #define FLAG_NO_MOVE        1
 #define FLAG_MOVE           2
+
+typedef moveit::planning_interface::MoveGroupInterface MoveGroupInterface;
 
 namespace moveit_simple_actions
 {
@@ -137,7 +139,7 @@ private:
   void attachObject(const std::string &block_name);
 
   //! @brief publish the planning info
-  void publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan,
+  void publishPlanInfo(MoveGroupInterface::Plan plan,
                        geometry_msgs::Pose pose_target);
 
   //! @brief set the planning time
@@ -198,13 +200,13 @@ private:
   moveit_simple_grasps::GraspData grasp_data_;
 
   /** interface with MoveIt */
-  boost::scoped_ptr<move_group_interface::MoveGroup> move_group_;
+  boost::scoped_ptr<MoveGroupInterface> move_group_;
 
   /** grasp generator */
   moveit_simple_grasps::SimpleGraspsPtr simple_grasps_;
 
   /** for planning actions */
-  boost::shared_ptr<moveit::planning_interface::MoveGroup::Plan> current_plan_;
+  boost::shared_ptr<MoveGroupInterface::Plan> current_plan_;
 
   /** visual tools pointer used for scene visualization */
   moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;

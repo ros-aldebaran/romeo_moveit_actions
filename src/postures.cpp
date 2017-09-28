@@ -15,9 +15,11 @@
 */
 
 // MoveIt!
-#include <moveit/move_group_interface/move_group.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 
 #include "romeo_moveit_actions/postures.hpp"
+
+typedef moveit::planning_interface::MoveGroupInterface MoveGroupInterface;
 
 namespace moveit_simple_actions
 {
@@ -26,7 +28,7 @@ Posture::Posture(const std::string robot_name,
                  const std::string group_name)
 {
   //set joint for the head
-  moveit::planning_interface::MoveGroup move_group_head("head");
+  MoveGroupInterface move_group_head("head");
   //get current
   move_group_head.getCurrentState()->copyJointGroupPositions(move_group_head.getCurrentState()->getRobotModel()->getJointModelGroup(move_group_head.getName()), pose_head_down_);
   if (pose_head_down_.size() > 1)
@@ -37,7 +39,7 @@ Posture::Posture(const std::string robot_name,
   pose_head_zero_.resize(pose_head_down_.size(), 0.0);
 
   //get the arm joints
-  moveit::planning_interface::MoveGroup move_group_plan(group_name);
+  MoveGroupInterface move_group_plan(group_name);
   std::vector<double> pose_arm_init;
   move_group_plan.getCurrentState()->copyJointGroupPositions(
               move_group_plan.getCurrentState()->getRobotModel()->getJointModelGroup(
@@ -124,7 +126,7 @@ Posture::Posture(const std::string robot_name,
 
   //get the joint of the eef
   std::vector<double> pose_hand;
-  moveit::planning_interface::MoveGroup move_group_eef(eef_name);
+  MoveGroupInterface move_group_eef(eef_name);
   move_group_eef.getCurrentState()->copyJointGroupPositions(move_group_eef.getCurrentState()->getRobotModel()->getJointModelGroup(move_group_eef.getName()), pose_hand);
   pose_hand_.resize(2);
   pose_hand_[0].resize(pose_hand.size(), 0.0);
@@ -176,7 +178,7 @@ bool Posture::poseHandClose(const std::string &end_eff)
 bool Posture::goToPose(const std::string group_name,
                        std::vector<double> *pose)
 {
-  moveit::planning_interface::MoveGroup move_group(group_name);
+  MoveGroupInterface move_group(group_name);
 
   //get the current set of joint values for the group
   std::vector<double> joints;
@@ -190,7 +192,7 @@ bool Posture::goToPose(const std::string group_name,
     //move_group.setApproximateJointValueTarget(*pose);
     move_group.setJointValueTarget(*pose);
 
-    moveit::planning_interface::MoveGroup::Plan plan;
+    MoveGroupInterface::Plan plan;
     bool success = move_group.plan(plan);
     sleep(1.0);
     if (success)
