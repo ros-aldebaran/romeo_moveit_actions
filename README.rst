@@ -17,7 +17,7 @@ Installation
 * apt-get install ros-indigo-romeo-moveit-actions
 * or from source: git clone https://github.com/ros-aldebaran/romeo_moveit_actions
 
-In case of compilin from source, install the following dependencies:
+In case of compiling from source, install the following dependencies:
   * MoveIt!
       * apt-get install ros-indigo-moveit-full
       * apt-get install ros-indigo-moveit-visual-tools
@@ -49,21 +49,21 @@ Get a robot-specific Moveit! configuration:
       * or from source https://github.com/ros-naoqi/pepper_moveit_config 
 
 
-For Romeo real (not a simulator)
+For a real robot (not a simulator)
 --------------------------------
 If you are working with a real robot (not a simulator) then install the dcm-related package:
+  * apt-get install ros-indigo-naoqi-dcm-driver
   * for Romeo: 
-      * from source https://github.com/ros-aldebaran/romeo_dcm
+      * apt-get install ros-indigo-romeo-control ros-indigo-romeo-dcm-bringup
+      * from source https://github.com/ros-aldebaran/romeo_virtual, https://github.com/ros-aldebaran/romeo_dcm_robot
+  * for Pepper:
+      * apt-get install ros-indigo-pepper-control ros-indigo-pepper-dcm-bringup
+      * from source https://github.com/ros-naoqi/pepper_virtual, https://github.com/ros-naoqi/pepper_dcm_robot
   * for Nao: 
-      * sudo-apt-get install ros-indigo-nao-control or from source https://github.com/ros-naoqi/nao_virtual
-      * from source https://github.com/ros-aldebaran/nao_dcm_robot 
+      * sudo-apt-get install ros-indigo-nao-control ros-indigo-nao-dcm-bringup
+      * or from source https://github.com/ros-naoqi/nao_virtual, https://github.com/ros-aldebaran/nao_dcm_robot
 
-Update the robot IP in the config-file (Romeo example):
-
-.. code-block:: bash
-
-    rosed romeo_dcm_bringup romeo_dcm.yaml
-
+Compile all source packages.
 
 
 How it works
@@ -87,14 +87,14 @@ Wait until the robot model is loaded and launch moveit_simple_actions:
 Welcome to the world of simple actions! Now, you can add virtual objects or detect real objects and reach/grasp/place them !
 
 
-For Romeo real (not a simulator)
+For a real robot (not a simulator)
 --------------------------------
 
-Launch the dcm_bringup (check the robot IP as described in installation):
+Launch the dcm_bringup (providing a correct robot IP), for example for Romeo:
 
 .. code-block:: bash
 
-    roslaunch romeo_dcm_bringup romeo_dcm_bringup_remote.launch
+    roslaunch romeo_dcm_bringup romeo_dcm_bringup_remote.launch robot_ip:=<ROBOT_IP>
 
 Launch MoveIt!:
 
