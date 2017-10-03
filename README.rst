@@ -69,7 +69,7 @@ Compile all source packages.
 How it works
 ============
 
-For Romeo simulator
+For a simulator (example for Romeo robot)
 -------------------
 
 Launch MoveIt!:
@@ -87,10 +87,10 @@ Wait until the robot model is loaded and launch moveit_simple_actions:
 Welcome to the world of simple actions! Now, you can add virtual objects or detect real objects and reach/grasp/place them !
 
 
-For a real robot (not a simulator)
+For a real robot (example for Romeo robot)
 --------------------------------
 
-Launch the dcm_bringup (providing a correct robot IP), for example for Romeo:
+Launch the dcm_bringup (providing the robot's IP):
 
 .. code-block:: bash
 
