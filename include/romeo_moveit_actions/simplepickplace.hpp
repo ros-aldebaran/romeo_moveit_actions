@@ -19,6 +19,7 @@
 
 #include <ros/ros.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 #include "romeo_moveit_actions/metablock.hpp"
 #include "romeo_moveit_actions/action.hpp"
@@ -47,6 +48,9 @@ protected:
   //main cycle
   bool startRoutine();
 
+  //! @brief create a table object
+  MetaBlock createTable();
+
   //switch between the left and right arms
   void switchArm(Action *action_now);
 
@@ -59,16 +63,11 @@ protected:
   //get collision objects from the topic /collision_object
   void getCollisionObjects(const moveit_msgs::CollisionObject::ConstPtr& msg);
 
-  //clean the object list based on the timestamp
-  void cleanObjects(std::vector<MetaBlock> *objects, const bool list_erase=true);
+  //! @brief clean the object list based on the timestamp
+  void cleanObjects(std::vector<MetaBlock> *objects,
+                    const bool list_erase=true);
 
-  //publish the object at a new position
-  void publishCollisionObject(MetaBlock *block, const geometry_msgs::Pose &pose);
-
-  //publish the object
-  void publishCollisionObject(MetaBlock *block);
-
-  //check if teh block exists
+  //! @brief check if the block exists
   bool checkObj(int &block_id);
 
   // A shared node handle
@@ -90,8 +89,8 @@ protected:
   //the shift of the robot's base to teh floor
   double floor_to_base_height_;
 
-  //Object processing
-  Objprocessing objproc_;
+  /** object processing */
+  ObjProcessor obj_proc_;
 
   //Evaluation of reaching/grasping
   Evaluation evaluation_;
@@ -107,13 +106,17 @@ protected:
   double z_min_;
   double z_max_;
 
-  //the name of the current support surface
-  std::string support_surface_name_;
+  /** name of the current support surface */
+  std::string support_surface_;
 
   //instances of an Action class for each arm
   Action *action_left_, *action_right_;
 
+  /** visual tools pointer used for scene visualization */
   moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
+
+  /** current MoveIt scene */
+  moveit::planning_interface::PlanningSceneInterface current_scene_;
 
   //the set of available objects
   std::vector<MetaBlock> blocks_;
@@ -151,6 +154,8 @@ protected:
   //publisher of the collision objects to the topic /collision_world
   ros::Publisher pub_obj_moveit_;
 
+  /** processing rate */
+  ros::Rate rate_;
 };
 }
 

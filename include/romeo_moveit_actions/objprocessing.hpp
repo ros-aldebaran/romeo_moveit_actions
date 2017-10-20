@@ -22,45 +22,105 @@
 // ROS
 #include <ros/ros.h>
 
+#include <tf/transform_listener.h>
+
+#include <geometry_msgs/PoseArray.h>
+
 #include <actionlib/client/simple_action_client.h>
 
 #include <object_recognition_msgs/GetObjectInformation.h>
 #include <object_recognition_msgs/ObjectRecognitionAction.h>
 
+#include "romeo_moveit_actions/metablock.hpp"
+#include "romeo_moveit_actions/evaluation.hpp"
+
+typedef object_recognition_msgs::RecognizedObjectArray RecognizedObjArray;
+typedef actionlib::SimpleActionClient<object_recognition_msgs::ObjectRecognitionAction> ObjRecoActionClient;
+typedef object_recognition_msgs::GetObjectInformation GetObjInfo;
+
 namespace moveit_simple_actions
 {
 
-class Objprocessing
+//! @brief Class for processing objects recognized by ORK.
+class ObjProcessor
 {
 public:
-  Objprocessing(ros::NodeHandle *nh_);
+  //! @brief constructor
+  ObjProcessor(ros::NodeHandle *nh,
+               Evaluation *evaluation);
 
-  //get the object's mesh from the DB
-  std::vector <shape_msgs::Mesh> getMeshFromDB(object_recognition_msgs::ObjectType type);
-
-  //detect objects
+  //! @brief trigger object detection client
   bool triggerObjectDetection();
 
+  //! @brief convert object recognition messages into collision objects
+  void getRecognizedObjects(const RecognizedObjArray::ConstPtr& msg);
+
+  //! @brief get amount of objects
+  int getAmountOfBlocks()
+  {
+    return blocks_.size();
+  }
+
+  //! @brief get an object by id
+  MetaBlock * getBlock(const int &id);
+
+  //! @brief add a new object to the end
+  void addBlock(const MetaBlock &block);
+
+  //! @brief clean the list of objects based on the timestamp
+  void cleanObjects(const bool list_erase=true);
+
+  /** publisher of objects' poses */
+  ros::Publisher pub_obj_poses_;
+
 protected:
+  //! @brief get the object's mesh from the DB
+  bool getMeshFromDB(GetObjInfo &obj_info);
+
+  //! @brief publish all collision objects in MoveIt
+  void publishAllCollObj(std::vector<MetaBlock> *blocks);
+
+  /** node handle */
   ros::NodeHandle *nh_;
 
-  std::string mesh_srv_name;
+  /** evaluation of reaching/grasping */
+  Evaluation *evaluation_;
 
+  /** object recognition action */
   const std::string OBJECT_RECOGNITION_ACTION;
 
-  std::string target_frame;
-  std::string depth_frame_id;
+  /** final object frame */
+  std::string target_frame_;
 
-  //! Client for getting the mesh for a database object
+  /** recognized object topic */
+  std::string object_topic_;
+
+  /** if found object info server */
+  bool found_srv_obj_info_;
+
+  /** Client for getting the mesh for a database object */
   ros::ServiceClient get_model_mesh_srv_;
 
-  ros::Subscriber object_recognition_subscriber_;
-  boost::scoped_ptr<actionlib::SimpleActionClient<object_recognition_msgs::ObjectRecognitionAction> > object_recognition_client_;
+  /** object recognition client */
+  boost::scoped_ptr<ObjRecoActionClient> obj_reco_client_;
 
-  bool found_srv_obj_info;
-  bool found_object_recognition_client_;
+  /** if found object recognition server */
+  bool found_obj_reco_client_;
+
+  /** subscriber to object recognition topic */
+  ros::Subscriber object_sub_;
+
+  /** transform listener */
+  tf::TransformListener listener_;
+
+  /** current MoveIt scene */
+  moveit::planning_interface::PlanningSceneInterface current_scene_;
+
+  /** set of available objects */
+  std::vector<MetaBlock> blocks_;
+
+  //! @brief all objects positions
+  geometry_msgs::PoseArray msg_obj_poses_;
 };
-
 }
-
 #endif // OBJPROCESSING_HPP

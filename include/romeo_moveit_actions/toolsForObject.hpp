@@ -17,39 +17,41 @@
 #ifndef TOOLSFOROBJECT_H
 #define TOOLSFOROBJECT_H
 
+#include <geometry_msgs/Pose.h>
+
+#include "romeo_moveit_actions/metablock.hpp"
+
 namespace moveit_simple_actions
 {
+//! @brief set the pose
+void setPose(geometry_msgs::Pose *pose,
+             const double &x,
+             const double &y,
+             const double &z,
+             const double &ox,
+             const double &oy,
+             const double &oz,
+             const double &ow);
 
-void setPose(geometry_msgs::Pose *pose, const double &x, const double &y, const double &z,
-                            const double &ox, const double &oy, const double &oz, const double &ow)
-{
-  pose->position.x = x;
-  pose->position.y = y;
-  pose->position.z = z;
-  pose->orientation.x = ox;
-  pose->orientation.y = oy;
-  pose->orientation.z = oz;
-  pose->orientation.w = ow;
+//! @brief set the pose
+void setPose(geometry_msgs::Pose *pose,
+             const double &x,
+             const double &y,
+             const double &z);
+
+//! @brief find the object by name
+int findObj(std::vector<MetaBlock> *blocks,
+            const std::string name);
+
+//! @brief get a list of objects
+std::vector<std::string> getObjectsList(const std::vector<MetaBlock> &blocks);
+
+//! @brief get a list of old objects
+std::vector<std::string> getObjectsOldList(std::vector<MetaBlock> *objects);
+
+//! @brief swap poses
+void swapPoses(geometry_msgs::Pose *pose1,
+               geometry_msgs::Pose *pose2);
 }
 
-void setPose(geometry_msgs::Pose *pose, const double &x, const double &y, const double &z)
-{
-  pose->position.x = x;
-  pose->position.y = y;
-  pose->position.z = z;
-}
-
-int findObj(const std::vector<MetaBlock> &blocks, const std::string name)
-{
-  int idx = -1;
-  for (int i=0; i<blocks.size(); ++i)
-    if (blocks[i].name_ == name){
-      idx = i;
-      return idx;
-    }
-  return idx;
-}
-
-}
-
-#endif // TOOLSOBJ_H
+#endif // TOOLSFOROBJECT_H

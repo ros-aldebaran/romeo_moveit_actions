@@ -25,6 +25,7 @@
 namespace moveit_simple_actions
 {
 
+//! @brief Class for evaluation the algorithm.
 class Evaluation
 {
 public:
@@ -55,11 +56,16 @@ public:
 
   void printStat();
 
-protected:
-  geometry_msgs::PoseArray generatePosesGrid(std::vector<MetaBlock> &blocks_test);
+  //! @brief checking if the pose is within the working space (close enough)
+  bool inWorkSpace(geometry_msgs::Pose pose,
+                   const bool x=true,
+                   const bool y=true,
+                   const bool z=true);
 
-  geometry_msgs::PoseArray generatePosesRnd(const int poses_nbr,
-                                            std::vector<MetaBlock> &blocks_test);
+protected:
+  geometry_msgs::PoseArray generatePosesGrid();
+
+  geometry_msgs::PoseArray generatePosesRnd(const int poses_nbr);
 
   int testReachWithGenSingleHand(Action *action,
                                  std::vector<MetaBlock> *blocks_surfaces,
@@ -80,11 +86,13 @@ protected:
   //the interval to test the working space
   double test_step_;
 
-  //the size of a default object
+  /** size X of a default object */
   double block_size_x_;
+
+  /** size Y of a default object */
   double block_size_y_;
 
-  //the shift of the robot's base to teh floor
+  /** shift of the robot's base to the floor */
   double floor_to_base_height_;
 
   //the working space of the robot
@@ -100,6 +108,11 @@ protected:
   //successfully reached positions
   std::vector <geometry_msgs::Pose> stat_poses_success_;
 
+  /** default object to grasp */
+  MetaBlock *block_;
+
+  /** default table to grasp on */
+  MetaBlock *table_;
 };
 }
 #endif // EVALUATION_HPP

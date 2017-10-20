@@ -27,11 +27,25 @@
 
 namespace moveit_simple_actions
 {
+  MetaBlock SimplePickPlace::createTable()
+  {
+    //create a table
+    double height = -floor_to_base_height_ + (pose_default_.position.z-block_size_y_/2.0);
+    double width = std::fabs(pose_default_r_.position.y*2.0) + block_size_x_/2.0;
+    double depth = 0.35;
+    geometry_msgs::Pose pose;
+    setPose(&pose,
+            pose_default_.position.x - block_size_x_/2.0 + depth/2.0,
+            0.0,
+            floor_to_base_height_ + height/2.0);
 
-  void swapPoses(geometry_msgs::Pose *pose1, geometry_msgs::Pose *pose2){
-    geometry_msgs::Pose temp = *pose1;
-    pose1 = pose2;
-    *pose2 = temp;
+    MetaBlock table("table",
+                    pose,
+                    shape_msgs::SolidPrimitive::BOX,
+                    depth,
+                    width,
+                    height);
+    return table;
   }
 
   SimplePickPlace::SimplePickPlace(const std::string robot_name,
@@ -54,8 +68,9 @@ namespace moveit_simple_actions
       block_size_y_(0.13),
       floor_to_base_height_(-1.0),
       env_shown_(false),
-      objproc_(&nh_priv_),
-      evaluation_(verbose_, base_frame_)
+      evaluation_(verbose_, base_frame_),
+      obj_proc_(&nh_priv_, &evaluation_),
+      rate_(12.0)
   {
     setPose(&pose_zero_, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0);
     pose_default_ = pose_zero_;
@@ -99,20 +114,11 @@ namespace moveit_simple_actions
       z_max_ = (z_max==0.0)?-0.08:z_max;
     }
     //create a table
-    double table_height = -floor_to_base_height_ + (pose_default_.position.z-block_size_y_/2.0);
-    double table_width = std::fabs(pose_default_r_.position.y*2.0) + block_size_x_/2.0;
-    double table_depth = 0.35;
-    geometry_msgs::Pose table_pose;
-    setPose(&table_pose, pose_default_.position.x-block_size_x_/2.0 + table_depth/2.0, 0.0,floor_to_base_height_ + table_height/2.0);
-    //if (robot_name_ == "romeo")
-    {
-      blocks_surfaces_.push_back(MetaBlock("table", table_pose, shape_msgs::SolidPrimitive::BOX, 0.35, table_width, table_height));
-      support_surface_name_ = blocks_surfaces_.front().name_;
-    }
-    env_shown_ = false;
 
     // objects related initialization
-    sub_obj_coll_ = nh_.subscribe<moveit_msgs::CollisionObject>("/collision_object", 10, &SimplePickPlace::getCollisionObjects, this);
+    /*sub_obj_coll_ = nh_.subscribe<moveit_msgs::CollisionObject>(
+          "/collision_object", 100, &SimplePickPlace::getCollisionObjects, this);*/
+
     pub_obj_poses_ = nh_.advertise<geometry_msgs::PoseArray>("/obj_poses", 10);
     pub_obj_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/pose_current", 10);
 
@@ -126,9 +132,11 @@ namespace moveit_simple_actions
     visual_tools_->removeAllCollisionObjects();
     ros::Duration(1.0).sleep();
 
-    action_left_ = new Action(&nh_, visual_tools_, left_arm_name, robot_name_);
-    action_right_ = new Action(&nh_, visual_tools_, right_arm_name, robot_name_);
-    //ROS_INFO_STREAM("action_left_->grasp_data_.base_link_ = " << action_left_->getBaseLink());
+    action_left_ = new Action(&nh_, left_arm_name, robot_name_);
+    action_right_ = new Action(&nh_, right_arm_name, robot_name_);
+    action_left_->initVisualTools(visual_tools_);
+    action_right_->initVisualTools(visual_tools_);
+
     msg_obj_pose_.header.frame_id = action_left_->getBaseLink();
     msg_obj_poses_.header.frame_id = action_left_->getBaseLink();
 
@@ -144,12 +152,21 @@ namespace moveit_simple_actions
 
     ros::Duration(1.0).sleep();
 
-    // Publish a table
-    //if (robot_name_ == "romeo")
+    //create a possible table
+    blocks_surfaces_.push_back(createTable());
+    support_surface_ = blocks_surfaces_.back().name_;
+    //remove surfaces and publish again
+    if (robot_name_ == "romeo")
     {
-      cleanObjects(&blocks_surfaces_, false);
-      pub_obj_moveit_.publish(blocks_surfaces_.front().collObj_);
-      env_shown_ = true;
+      std::vector<std::string> objects = getObjectsOldList(&blocks_surfaces_);
+      current_scene_.removeCollisionObjects(objects);
+      sleep(1.0);
+      //add a collision block
+      if (blocks_surfaces_.size() > 0)
+      {
+        blocks_surfaces_.back().publishBlock(&current_scene_);
+        env_shown_ = true;
+      }
     }
 
     evaluation_.init(test_step, block_size_x_, block_size_y_, floor_to_base_height_,
@@ -171,18 +188,21 @@ namespace moveit_simple_actions
 
   void SimplePickPlace::createObj(const MetaBlock &block)
   {
-    blocks_.push_back(block);
-    msg_obj_pose_.pose = block.start_pose_;
+    obj_proc_.addBlock(block);
+    msg_obj_pose_.header.frame_id = block.base_frame_;
+    msg_obj_pose_.pose = block.pose_;
     pub_obj_pose_.publish(msg_obj_pose_);
-    pub_obj_moveit_.publish(blocks_.back().collObj_);
+
+    //publish the collision object
+    //obj_proc_.blocks_->back().publishBlock(&current_scene_);
   }
 
   bool SimplePickPlace::checkObj(int &block_id)
   {
-      if ((block_id >= 0) && (block_id < blocks_.size()))
-        return true;
-      else
-        false;
+    if ((block_id >= 0) && (block_id < obj_proc_.getAmountOfBlocks()))
+      return true;
+    else
+      false;
   }
 
   bool SimplePickPlace::startRoutine()
@@ -192,66 +212,85 @@ namespace moveit_simple_actions
     Action *action = action_left_;
 
     //create a virtual object
-    createObj(MetaBlock("Virtual1", pose_default_, shape_msgs::SolidPrimitive::CYLINDER, block_size_x_, block_size_y_, 0.0));
+    MetaBlock block_l("Virtual1",
+                      pose_default_,
+                      shape_msgs::SolidPrimitive::CYLINDER,
+                      block_size_x_,
+                      block_size_y_,
+                      0.0);
 
-    while(ros::ok()) //main loop
+    createObj(block_l);
+    block_id = 0;
+
+    std::string actionName = "";
+    MetaBlock *block;
+
+    //the main loop
+    while(ros::ok())
     {
       std::string actionName = "";
       while(ros::ok()) //loop objects
       {
-        if ((block_id == -1) && (blocks_.size() > 0)) //if there are some objects, take the first
+        //if there are some objects, take the first
+        if ((block_id == -1) && (obj_proc_.getAmountOfBlocks() > 0))
           block_id = 0;
-        else if (block_id >= blocks_.size()) //if the object does not exist
+        //if the object does not exist
+        else if (block_id >= obj_proc_.getAmountOfBlocks())
         {
+          ROS_WARN_STREAM("The object " << block_id << " does not exist");
           block_id = -1;
-          cleanObjects(&blocks_, true);
+          obj_proc_.cleanObjects(true);
         }
 
         if (block_id >= 0)
         {
+          block = obj_proc_.getBlock(block_id);
+          if (block == NULL)
+          {
+            ROS_INFO_STREAM("the object " << block_id << " does not exist");
+            block_id = -1;
+            continue;
+          }
+
           //update the object's pose
-          msg_obj_pose_.pose = blocks_[block_id].start_pose_;
+          msg_obj_pose_.header.frame_id = block->base_frame_;
+          msg_obj_pose_.pose = block->pose_;
           pub_obj_pose_.publish(msg_obj_pose_);
           ROS_INFO_STREAM("The current active object is "
-                                << blocks_[block_id].name_ << " out of " << blocks_.size());
+                          << block->name_
+                          << " out of " << obj_proc_.getAmountOfBlocks());
 
-          if (hand_id == 0)
-          {
-            if (blocks_[block_id].start_pose_.position.y > 0)
-              action = action_left_;
-            else
-              action = action_right_;
-          }
+          //obj_proc_.publishAllCollObj(&blocks_);
         }
 
         //ROS_INFO_STREAM("What do you want me to do ?");
         actionName = promptUserQuestionString();
         ROS_INFO_STREAM("Action chosen '" << actionName
-                              << "' object_id=" << block_id
-                              << " the arm active=" << action->arm_);
+                        << "' object_id=" << block_id
+                        << " the arm active=" << action->arm_);
 
         // Pick -----------------------------------------------------
         if ((checkObj(block_id)) && (actionName == "g")) //key 'g' //pick the object with a grasp generator
         {
-          bool success = action->pickAction(&blocks_[block_id], support_surface_name_);
+          bool success = action->pickAction(block, support_surface_);
           //if not succeded then try with another arm
           if(!success)
           {
             switchArm(action);
-            success = action->pickAction(&blocks_[block_id], support_surface_name_);
+            success = action->pickAction(block, support_surface_);
           }
 
           if(success)
-            stat_poses_success_.push_back(blocks_[block_id].start_pose_);
+            stat_poses_success_.push_back(block->pose_);
         }
         // Place --------------------------------------------------------
         else if ((checkObj(block_id)) && (actionName == "p"))  //key 'p' //place the object with a default function
         {
-          if(action->placeAction(&blocks_[block_id], support_surface_name_))
+          if(action->placeAction(block, support_surface_))
           {
             // Swap this block's start and end pose so that we can then move them back to position
-            swapPoses(&blocks_[block_id].start_pose_, &blocks_[block_id].goal_pose_);
-            resetBlock(&blocks_[block_id]);
+            swapPoses(&block->pose_, &block->goal_pose_);
+            resetBlock(block);
           }
         }
         // Return the hand to the zero pose ------------------------------
@@ -259,7 +298,7 @@ namespace moveit_simple_actions
         {
           // Remove the attached object and the collision object
           if (checkObj(block_id))
-            resetBlock(&blocks_[block_id]);
+            resetBlock(block);
           action->poseHand(0);
         }
         //return the hand to the initial pose ------------------------------
@@ -267,7 +306,7 @@ namespace moveit_simple_actions
         {
           // Remove the attached object and the collision object
           if (checkObj(block_id))
-            resetBlock(&blocks_[block_id]);
+            resetBlock(block);
           action->poseHand(1);
         }
         //return the hand to the initial pose ------------------------------
@@ -275,7 +314,7 @@ namespace moveit_simple_actions
         {
           // Remove the attached object and the collision object
           if (checkObj(block_id))
-            resetBlock(&blocks_[block_id]);
+            resetBlock(block);
           action->poseHand(2);
         }
         //return the hand to the initial pose ------------------------------
@@ -283,7 +322,7 @@ namespace moveit_simple_actions
         {
           // Remove the attached object and the collision object
           if (checkObj(block_id))
-            resetBlock(&blocks_[block_id]);
+            resetBlock(block);
           action->poseHand(3);
         }
         //exit
@@ -314,105 +353,72 @@ namespace moveit_simple_actions
         {
           cleanObjects(&blocks_);
 
-          objproc_.triggerObjectDetection();
-          // publish all objects as collision blocks
-          if (blocks_.size() > 0)
-          {
-            for (std::vector<MetaBlock>::iterator block=blocks_.begin(); block != blocks_.end(); ++block)
-            {
-              //visual_tools_->cleanupCO(block->name_);
-              moveit_msgs::CollisionObject msg = block->wrapToCollisionObject(objproc_.getMeshFromDB(block->type_));
-              //if (!msg.meshes.empty())
-                visual_tools_->processCollisionObjectMsg(msg);
-              /*else
-                pub_obj_moveit_.publish(block->collObj_);*/
-            }
-          }
+          obj_proc_.triggerObjectDetection();
         }
         //dd continuous object detection
         else if (actionName == "dd") //key 'dd' //detect objects
         {
-          cleanObjects(&blocks_);
+          obj_proc_.cleanObjects(true);
 
+          ROS_INFO_STREAM("Object detection is running...");
           ros::Time start_time = ros::Time::now();
-          while ((blocks_.size() <= 0) && (ros::Time::now() - start_time < ros::Duration(15.0)))
+          while ((obj_proc_.getAmountOfBlocks() <= 0)
+                 && (ros::Time::now()-start_time < ros::Duration(10.0)))
           {
-            ROS_INFO_STREAM("**** object detection is running, objects detected  " << blocks_.size() << " " << ros::Time::now());
-            objproc_.triggerObjectDetection();
+            obj_proc_.triggerObjectDetection();
+            rate_.sleep();
           }
-
-          // publish all objects as collision blocks
-          if (blocks_.size() > 0)
-          {
-            for (std::vector<MetaBlock>::iterator block=blocks_.begin(); block != blocks_.end(); ++block)
-            {
-              moveit_msgs::CollisionObject msg = block->wrapToCollisionObject(objproc_.getMeshFromDB(block->type_));
-              if (!msg.primitive_poses.empty())
-                visual_tools_->processCollisionObjectMsg(msg);
-            }
-          }
+          if (verbose_)
+            ROS_INFO_STREAM(obj_proc_.getAmountOfBlocks() << " objects detected");
         }
         //------------ reaching all poses generated by moveit simple grasps
         else if ((checkObj(block_id))&& (actionName == "plan")) //key 'action' //plan movement
         {
           //TODO: do not remove an object but allow a collision to it
-          visual_tools_->cleanupCO(blocks_[block_id].name_);
-          action->graspPlan(&blocks_[block_id], support_surface_name_);
-          resetBlock(&blocks_[block_id]);
+          visual_tools_->cleanupCO(block->name_);
+          action->graspPlan(block, support_surface_);
+          resetBlock(block);
         }
         else if ((checkObj(block_id)) && (actionName == "a")) //key 'a' //plan all movement
         {
           //TODO: do not remove an object but allow a collision to it
-          visual_tools_->cleanupCO(blocks_[block_id].name_);
-          action->graspPlanAllPossible(&blocks_[block_id], support_surface_name_);
-          resetBlock(&blocks_[block_id]);
+          visual_tools_->cleanupCO(block->name_);
+          action->graspPlanAllPossible(block, support_surface_);
+          resetBlock(block);
         }
         //------------ reaching the default pose
-        else if ((checkObj(block_id)) && (actionName == "u")) //key 'u' //reach and grasp
+        //reaching based on default pose and grasp
+        else if ((checkObj(block_id)) && (actionName == "u"))
         {
-          //TODO: do not remove an object but allow a collision to it
-          //visual_tools_->cleanupCO(blocks_[block_id].name_);
-          geometry_msgs::Pose pose = blocks_[block_id].start_pose_;
-          pose.position.y = 50;
-          publishCollisionObject(&blocks_[block_id], pose);
-          ros::Duration(0.2).sleep();
-
-          float dist = action->reachGrasp(&blocks_[block_id], support_surface_name_);
+          float dist = action->reachGrasp(block, support_surface_);
           //if not succeded then try with another arm
           if(dist > 10)
           {
             switchArm(action);
-            dist = action->reachGrasp(&blocks_[block_id], support_surface_name_);
+            dist = action->reachGrasp(block, support_surface_);
           }
-
-          publishCollisionObject(&blocks_[block_id]);
-          if (dist < 0.2)
-          {
-            action->attachObject(blocks_[block_id].name_);
-            action->poseHandClose();
-          }
-          //resetBlock(&blocks_[block_id]);
         }
-        else if ((checkObj(block_id)) && (actionName == "pregrasp")) //key 'x' //reach the pregrasp pose
+        //moving the virtual object down
+        else if ((checkObj(block_id)) && (actionName == "pregrasp"))
         {
           //TODO: do not remove an object but allow a collision to it
-          visual_tools_->cleanupCO(blocks_[block_id].name_);
-          action->reachPregrasp(blocks_[block_id].start_pose_, support_surface_name_);
-          resetBlock(&blocks_[block_id]);
+          visual_tools_->cleanupCO(block->name_);
+          action->reachPregrasp(block->pose_, support_surface_);
+          resetBlock(block);
         }
         else if ((checkObj(block_id)) && (actionName == "reachtop")) //key 'y' //reach from top
         {
           //TODO: do not remove an object but allow a collision to it
-          visual_tools_->cleanupCO(blocks_[block_id].name_);
-          geometry_msgs::Pose pose = blocks_[block_id].start_pose_;
+          visual_tools_->cleanupCO(block->name_);
+          geometry_msgs::Pose pose = block->pose_;
           pose.orientation.x = 0;
-          pose.position.z += blocks_[block_id].size_x_*1.5; //0.12;
-          action->reachAction(pose, support_surface_name_);
-          resetBlock(&blocks_[block_id]);
+          pose.position.z += block->size_x_*1.5; //0.12;
+          action->reachAction(pose, support_surface_);
+          resetBlock(block);
         }
         else if ((checkObj(block_id)) && (actionName == "b")) //key 'b' //pick an object without a grasp generator
         {
-          action->pickDefault(&blocks_[block_id], support_surface_name_);
+          action->pickDefault(block, support_surface_);
         }
         else if ((checkObj(block_id)) && (actionName == "execute")) //execute tha plan
         {
@@ -461,7 +467,7 @@ namespace moveit_simple_actions
         else if (actionName == "set_table_height") // set table height
         {
           blocks_surfaces_.front().size_z_ = promptUserValue("give the table height");
-          blocks_surfaces_.front().start_pose_.position.z = floor_to_base_height_ + blocks_surfaces_.front().size_z_/2.0;
+          blocks_surfaces_.front().pose_.position.z = floor_to_base_height_ + blocks_surfaces_.front().size_z_/2.0;
           pub_obj_moveit_.publish(blocks_surfaces_.front().collObj_);
         }
         else if (actionName == "t") //clean the scene
@@ -479,65 +485,70 @@ namespace moveit_simple_actions
             env_shown_ = true;
           }
         }
-        //moving the virtual objects
-        else if ((actionName == "x") || (actionName == "down")) //down
+        //moving the virtual object down
+        else if ((actionName == "x") || (actionName == "down"))
         {
           if (blocks_.size() > 0)
           {
-            geometry_msgs::Pose pose = blocks_[block_id].start_pose_;
+            geometry_msgs::Pose pose = block->pose_;
             pose.position.z -= 0.05;
-            blocks_[block_id].updatePose(pose);
-            resetBlock(&blocks_[block_id]);
+            block->updatePose(pose);
+            resetBlock(block);
           }
         }
-        else if ((actionName == "s") || (actionName == "left")) //left
+        //move the virtual object left
+        else if ((actionName == "s") || (actionName == "left"))
         {
           if (blocks_.size() > 0)
           {
-            geometry_msgs::Pose pose = blocks_[block_id].start_pose_;
+            geometry_msgs::Pose pose = block->pose_;
             pose.position.y -= 0.05;
-            blocks_[block_id].updatePose(pose);
-            resetBlock(&blocks_[block_id]);
+            block->updatePose(pose);
+            resetBlock(block);
           }
         }
-        else if ((actionName == "e") || (actionName == "up")) //up or 'e'
+        //move the virtual object up
+        else if ((actionName == "e") || (actionName == "up"))
         {
           if (blocks_.size() > 0)
           {
-            geometry_msgs::Pose pose = blocks_[block_id].start_pose_;
+            geometry_msgs::Pose pose = block->pose_;
             pose.position.z += 0.05;
-            blocks_[block_id].updatePose(pose);
-            resetBlock(&blocks_[block_id]);
+            block->updatePose(pose);
+            resetBlock(block);
           }
         }
-        else if ((actionName == "f") || (actionName == "right")) //right
+        //move the virtual object right
+        else if ((actionName == "f") || (actionName == "right"))
         {
           if (blocks_.size() > 0)
           {
-            geometry_msgs::Pose pose = blocks_[block_id].start_pose_;
+            geometry_msgs::Pose pose = block->pose_;
             pose.position.y += 0.05;
-            blocks_[block_id].updatePose(pose);
-            resetBlock(&blocks_[block_id]);
+            block->updatePose(pose);
+            resetBlock(block);
           }
         }
-        else if ((actionName == "c") || (actionName == "farther")) //farther
+        //move the virtual object farther
+        else if ((actionName == "c") || (actionName == "farther"))
         {
           if (blocks_.size() > 0)
           {
-            geometry_msgs::Pose pose = blocks_[0].start_pose_;
+            geometry_msgs::Pose pose = blocks_[0].pose_;
             pose.position.x += 0.05;
             blocks_[0].updatePose(pose);
-            resetBlock(&blocks_[block_id]);
+            resetBlock(block);
           }
         }
-        else if ((actionName == "r") || (actionName == "closer")) //closer
+        //move the virtual object closer
+        else if ((actionName == "r") || (actionName == "closer"))
         {
           if (blocks_.size() > 0)
           {
-            geometry_msgs::Pose pose = blocks_[0].start_pose_;
+            geometry_msgs::Pose pose = blocks_[0].pose_;
             pose.position.x -= 0.05;
             blocks_[0].updatePose(pose);
-            resetBlock(&blocks_[block_id]);
+            resetBlock(block);
           }
         }
         else if (actionName == "j") //key 'j', set the tolerance
@@ -570,89 +581,32 @@ namespace moveit_simple_actions
   }
 
   //clean the object list based on the timestamp
-  void SimplePickPlace::cleanObjects(std::vector<MetaBlock> *objects, const bool list_erase)
+  void SimplePickPlace::cleanObjects(std::vector<MetaBlock> *objects,
+                                     const bool list_erase)
   {
-    ROS_INFO_STREAM("--- cleaning objects");
-    ros::Time now = ros::Time::now() - ros::Duration(5);
-
-    if (objects->size()>0)
-    for (std::vector<MetaBlock>::iterator block=objects->begin(); block != objects->end(); ++block)
-    {
-      if (block->timestamp_ < now)
-        resetBlock(&(*block));
-    }
+    std::vector<std::string> objects_list = getObjectsOldList(objects);
+    current_scene_.removeCollisionObjects(objects_list);
 
     //remove from the memory
     if (list_erase)
       objects->clear();
-
-    msg_obj_poses_.poses.clear();
-    pub_obj_poses_.publish(msg_obj_poses_);
   }
 
   void SimplePickPlace::resetBlock(MetaBlock *block)
   {
     // Remove attached object
-    if(block->name_ != support_surface_name_)
+    if(block->name_ != support_surface_)
     {
       action_left_->detachObject(block->name_);
       action_right_->detachObject(block->name_);
     }
+    sleep(0.2);
 
     // Remove/Add collision object
     //visual_tools_->cleanupCO(block->name_);
     //visual_tools_->processCollisionObjectMsg(block->wrapToCollisionObject);
-    pub_obj_moveit_.publish(block->collObj_);
-  }
 
-  void SimplePickPlace::publishCollisionObject(MetaBlock *block, const geometry_msgs::Pose &pose)
-  {
-      if (block->collObj_.primitive_poses.size() > 0)
-      {
-        moveit_msgs::CollisionObject collObj = block->collObj_;
-        collObj.primitive_poses[0] = pose;
-        pub_obj_moveit_.publish(collObj);
-      }
-  }
-  void SimplePickPlace::publishCollisionObject(MetaBlock *block)
-  {
-     pub_obj_moveit_.publish(block->collObj_);
-  }
-
-  void SimplePickPlace::getCollisionObjects(const moveit_msgs::CollisionObject::ConstPtr& msg)
-  {
-    //cleanObjects(&blocks_, false);
-
-    try {
-      if (msg->meshes.size() > 0)
-      {
-        geometry_msgs::Pose pose = msg->mesh_poses[0];
-        if ((pose.position.x < x_max_) && (pose.position.x > x_min_)
-            && (pose.position.z < z_max_) && (pose.position.z > z_min_))
-        {
-          //check if exists
-          int idx = findObj(blocks_, msg->id);
-
-          //pose.position.z += 0.0576;
-          if (idx == -1) //if not found, create a new one
-          {
-            blocks_.push_back(MetaBlock(msg->id, pose, msg->meshes.front(), msg->type, msg->header.stamp));
-            msg_obj_poses_.poses.push_back(pose);
-          }
-          else if ((idx >= 0) && (idx < blocks_.size()))
-          {
-            blocks_[idx].updatePose(pose);
-            if (idx >= msg_obj_poses_.poses.size())
-              msg_obj_poses_.poses.resize(idx+1);
-            msg_obj_poses_.poses[idx] = pose;
-          }
-        }
-      }
-    }
-    catch (tf::TransformException ex){
-      ROS_ERROR("%s",ex.what());
-      ros::Duration(1.0).sleep();
-    }
+    block->publishBlock(&current_scene_);
   }
 
 } //namespace

@@ -40,6 +40,7 @@ set(SRC
   src/postures.cpp
   src/objprocessing.cpp
   src/evaluation.cpp
+  src/toolsForObject.cpp
   include/romeo_moveit_actions/simplepickplace.hpp
   include/romeo_moveit_actions/metablock.hpp
   include/romeo_moveit_actions/action.hpp
