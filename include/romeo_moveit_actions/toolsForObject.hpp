@@ -14,8 +14,8 @@
  * limitations under the License.
 */
 
-#ifndef TOOLSOBJ_H
-#define TOOLSOBJ_H
+#ifndef TOOLSFOROBJECT_H
+#define TOOLSFOROBJECT_H
 
 namespace moveit_simple_actions
 {

@@ -23,7 +23,7 @@
 
 #include "romeo_moveit_actions/simplepickplace.hpp"
 #include "romeo_moveit_actions/tools.hpp"
-#include "romeo_moveit_actions/toolsObj.hpp"
+#include "romeo_moveit_actions/toolsForObject.hpp"
 
 namespace moveit_simple_actions
 {

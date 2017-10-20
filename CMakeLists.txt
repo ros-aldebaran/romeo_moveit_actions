@@ -46,7 +46,7 @@ set(SRC
   include/romeo_moveit_actions/postures.hpp
   include/romeo_moveit_actions/tools.hpp
   include/romeo_moveit_actions/toolsForAction.hpp
-  include/romeo_moveit_actions/toolsObj.hpp
+  include/romeo_moveit_actions/toolsForObject.hpp
   include/romeo_moveit_actions/evaluation.hpp
   include/romeo_moveit_actions/objprocessing.hpp
 )
