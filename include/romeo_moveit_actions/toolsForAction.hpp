@@ -23,9 +23,12 @@
 namespace moveit_simple_actions
 {
 
+//! @brief wait for action
 template<typename T>
-void waitForAction(const T &action, const ros::NodeHandle &node_handle,
-                   const ros::Duration &wait_for_server, const std::string &name)
+void waitForAction(const T &action,
+                   const ros::NodeHandle &node_handle,
+                   const ros::Duration &wait_for_server,
+                   const std::string &name)
 {
   ROS_DEBUG("Waiting for MoveGroup action server (%s)...", name.c_str());
 
@@ -49,7 +52,8 @@ void waitForAction(const T &action, const ros::NodeHandle &node_handle,
   else
   {
     ros::Time final_time = ros::Time::now() + wait_for_server;
-    while (node_handle.ok() && !action->isServerConnected() && final_time > ros::Time::now())
+    while (node_handle.ok() && !action->isServerConnected()
+           && final_time > ros::Time::now())
     {
       ros::WallDuration(0.02).sleep();
       ros::spinOnce();
@@ -57,7 +61,7 @@ void waitForAction(const T &action, const ros::NodeHandle &node_handle,
   }
 
   if (!action->isServerConnected())
-    throw std::runtime_error("Unable to connect to move_group action server within allotted time (2)");
+    throw std::runtime_error("Unable to connect to the action server within allotted time (2)");
   else
     ROS_DEBUG("Connected to '%s'", name.c_str());
 }
