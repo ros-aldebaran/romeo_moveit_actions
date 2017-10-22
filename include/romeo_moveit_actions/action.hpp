@@ -43,14 +43,14 @@
 namespace moveit_simple_actions
 {
 
-//! @brief Class for motion planning based on move_group.
+//! @brief Class allows motion planning based on move_group.
 class Action
 {
 public:
   //! @brief constructor
-  Action(ros::NodeHandle *nh_,
-         const std::string arm_,
-         const std::string robot_name);
+  Action(ros::NodeHandle *nh,
+         const std::string &arm,
+         const std::string &robot_name);
 
   //! @brief initialize the visual tools
   void initVisualTools(moveit_visual_tools::MoveItVisualToolsPtr &visual_tools);
@@ -81,13 +81,20 @@ public:
   bool executeAction();
 
   //! @brief reach default grasping pose
-  float reachGrasp(MetaBlock *block, const std::string surface_name);
+  float reachGrasp(MetaBlock *block,
+                   const std::string surface_name,
+                  int attempts_nbr=0,
+                  float tolerance_min=0.0f,
+                  double planning_time=0.0);
 
   //reaching the pre-grasp pose
-  bool reachPregrasp(geometry_msgs::Pose pose_target, const std::string surface_name);
+  bool reachPregrasp(geometry_msgs::Pose pose_target,
+                     const std::string surface_name);
 
   //! @brief reach the top of an object
-  bool reachAction(geometry_msgs::Pose pose_target, const std::string surface_name="");
+  bool reachAction(geometry_msgs::Pose pose_target,
+                   const std::string surface_name="",
+                   const int attempts_nbr=1);
 
   //! @brief go to the pose
   bool poseHand(const int pose_id);
@@ -118,6 +125,9 @@ public:
 
   //the current arm name
   const std::string arm_;
+
+  //the name of planning group
+  const std::string plan_group_;
 
 private:
   //! @brief attach the collision object
@@ -178,9 +188,7 @@ private:
   /** active end effector */
   const std::string end_eff_;
 
-  //the name of planning group
-  const std::string plan_group_;
-
+  /** posture class */
   Posture posture_;
 
   /** grasp configuration */
@@ -198,8 +206,11 @@ private:
   /** visual tools pointer used for scene visualization */
   moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
 
-  //publisher for object poses
-  ros::Publisher pub_obj_pose, pub_obj_poses;
+  /** publisher for object poses */
+  ros::Publisher pub_obj_pose_;
+
+  /** publisher for objects poses */
+  ros::Publisher pub_obj_poses_;
 
   /** publish final pose */
   ros::Publisher pub_plan_pose_;
