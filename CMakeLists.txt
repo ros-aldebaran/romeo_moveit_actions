@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8.3)
 SET(PROJECTNAME romeo_moveit_actions)
 project(${PROJECTNAME})
 
+add_compile_options(-std=c++11)
+
 find_package(catkin REQUIRED COMPONENTS 
   moveit_ros_planning 
   moveit_ros_planning_interface
