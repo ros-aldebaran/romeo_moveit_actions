@@ -123,6 +123,9 @@ public:
   //! @brief get the base_link
   std::string getBaseLink();
 
+  //! @brief release the object
+  void releaseObject(MetaBlock *block);
+
   /** current arm name */
   const std::string arm_;
 
@@ -205,6 +208,9 @@ private:
 
   /** visual tools pointer used for scene visualization */
   moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
+
+  /** the current MoveIt scene */
+  moveit::planning_interface::PlanningSceneInterface current_scene_;
 
   /** publisher for object poses */
   ros::Publisher pub_obj_pose_;

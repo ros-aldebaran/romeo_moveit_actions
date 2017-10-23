@@ -113,16 +113,14 @@ namespace moveit_simple_actions
       z_min_ = (z_min==0.0)?-0.17:z_min;
       z_max_ = (z_max==0.0)?-0.08:z_max;
     }
-    //create a table
 
     // objects related initialization
     /*sub_obj_coll_ = nh_.subscribe<moveit_msgs::CollisionObject>(
           "/collision_object", 100, &SimplePickPlace::getCollisionObjects, this);*/
 
-    pub_obj_poses_ = nh_.advertise<geometry_msgs::PoseArray>("/obj_poses", 10);
-    pub_obj_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/pose_current", 10);
+    pub_obj_pose_ = nh_.advertise<geometry_msgs::PoseStamped>("/pose_current", 1);
 
-    pub_obj_moveit_ = nh_.advertise<moveit_msgs::CollisionObject>("/collision_object", 1000);
+    pub_obj_moveit_ = nh_.advertise<moveit_msgs::CollisionObject>("/collision_object", 10);
 
     // Load the Robot Viz Tools for publishing to rviz
     visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools("odom"));
@@ -138,12 +136,12 @@ namespace moveit_simple_actions
     action_right_->initVisualTools(visual_tools_);
 
     msg_obj_pose_.header.frame_id = action_left_->getBaseLink();
-    msg_obj_poses_.header.frame_id = action_left_->getBaseLink();
 
-    //Move the robots parts to init positions
+    //move the robots parts to init positions
     //if (promptUserQuestion("Should I move the head to look down?"))
       //action_left_->poseHeadDown();
 
+    //move arms to the initial position
     //if (promptUserQuestion(("Should I move the "+action_left_->end_eff+" to the initial pose?").c_str()))
     action_left_->poseHand(1);
 
@@ -169,19 +167,30 @@ namespace moveit_simple_actions
       }
     }
 
-    evaluation_.init(test_step, block_size_x_, block_size_y_, floor_to_base_height_,
-                     x_min_, x_max_, y_min_, y_max_, z_min_, z_max_);
+    evaluation_.init(test_step,
+                     block_size_x_,
+                     block_size_y_,
+                     floor_to_base_height_,
+                     x_min_,
+                     x_max_,
+                     y_min_,
+                     y_max_,
+                     z_min_,
+                     z_max_);
 
     printTutorial(robot_name);
   }
 
 
-  void SimplePickPlace::switchArm(Action *action_now)
+  void SimplePickPlace::switchArm(Action *action)
   {
-    if (action_now->arm_ == "left")
-      action_now = action_right_;
+    if (action->arm_.find("left") != std::string::npos)
+      action = action_right_;
     else
-      action_now = action_left_;
+      action = action_left_;
+
+    ROS_INFO_STREAM("Switching the active arm to " << action->arm_);
+    sleep(2.0);
   }
 
   void SimplePickPlace::createObj(const MetaBlock &block)
@@ -262,8 +271,8 @@ namespace moveit_simple_actions
       ROS_INFO_STREAM("Action chosen '" << actionName
                       << "' object_id=" << block_id
                       << " the arm active=" << action->arm_);
-      // Pick -----------------------------------------------------
-      if ((checkObj(block_id)) && (actionName == "g")) //key 'g'
+      // Pick the object with a grasp generator
+      if ((checkObj(block_id)) && (actionName == "g"))
       {
         bool success = action->pickAction(block, support_surface_);
         //if not succeded then try with another arm
@@ -276,84 +285,71 @@ namespace moveit_simple_actions
         if(success)
           stat_poses_success_.push_back(block->pose_);
       }
-      // Place --------------------------------------------------------
-      else if ((checkObj(block_id)) && (actionName == "p"))  //key 'p'
+      // Place the object with a default function
+      else if ((checkObj(block_id)) && (actionName == "p"))
       {
         if(action->placeAction(block, support_surface_))
         {
-        /* swap this block's start and the end pose
-         * so that we can then move them back to position */
+          /* swap this block's start and the end pose
+           * so that we can then move them back to position */
           swapPoses(&block->pose_, &block->goal_pose_);
           resetBlock(block);
         }
       }
-      // Return the hand to the zero pose ------------------------------
-      else if (actionName == "i0") //key 'z'
+      //return the hand to the initial pose and relese the object
+      else if (actionName == "i")
       {
         // Remove the attached object and the collision object
         if (checkObj(block_id))
-          resetBlock(block);
-        action->poseHand(0);
+          action->releaseObject(block);
+        else
+          action->poseHand(1);
       }
-      //return the hand to the initial pose ------------------------------
-      else if (actionName == "i") //key 'i'
+      //return the hand to the initial pose
+      else if ((actionName.length() == 3) || (actionName.compare(0,1,"i") == 0))
       {
-        // Remove the attached object and the collision object
+        //remove the attached object and the collision object
         if (checkObj(block_id))
           resetBlock(block);
-        action->poseHand(1);
+        //go to the required pose
+        action->poseHand(actionName.at(1));
       }
-      //return the hand to the initial pose ------------------------------
-      else if (actionName == "i1") //key 'i1'
-      {
-        // Remove the attached object and the collision object
-        if (checkObj(block_id))
-          resetBlock(block);
-        action->poseHand(2);
-      }
-      //return the hand to the initial pose ------------------------------
-      else if (actionName == "i2") //key 'i2'
-      {
-        // Remove the attached object and the collision object
-        if (checkObj(block_id))
-          resetBlock(block);
-        action->poseHand(3);
-      }
-      //exit
-      else if (actionName == "q") //key 'q'
+      //exit the application
+      else if (actionName == "q")
         break;
-      //clean objects and publish virtual cylinder on the left arm side
-      else if (actionName == "lb") //key 'lb'
+      //clean a virtual box on the left arm side
+      else if (actionName == "lb")
       {
-        cleanObjects(&blocks_);
+        obj_proc_.cleanObjects();
         createObj(MetaBlock("Virtual1", pose_default_, shape_msgs::SolidPrimitive::BOX, block_size_x_, block_size_y_, 0.0));
       }
-      //clean objects and publish virtual cylinder on the left arm side
-      else if (actionName == "lc") //key 'c'
+      //create a virtual cylinder on the left hand side
+      else if (actionName == "lc")
       {
-        cleanObjects(&blocks_);
+        obj_proc_.cleanObjects();
         createObj(MetaBlock("Virtual1", pose_default_, shape_msgs::SolidPrimitive::CYLINDER, block_size_x_, block_size_y_, 0.0));
       }
-      //clean and publish virtual for the right arm
-      else if (actionName == "rb") //key 'r'
+      //create a virtual box on the right hand side
+      else if (actionName == "rb")
       {
-        cleanObjects(&blocks_);
+        obj_proc_.cleanObjects();
         createObj(MetaBlock("Virtual1", pose_default_r_, shape_msgs::SolidPrimitive::BOX, block_size_x_, block_size_y_, 0.0));
       }
-      //clean and publish virtual for the right arm
-      else if (actionName == "rc") //key 'r'
+      //create a virtual cylinder on the right hand side
+      else if (actionName == "rc")
       {
-        cleanObjects(&blocks_);
+        obj_proc_.cleanObjects();
         createObj(MetaBlock("Virtual1", pose_default_r_, shape_msgs::SolidPrimitive::CYLINDER, block_size_x_, block_size_y_, 0.0));
       }
       //detect objects
-      else if (actionName == "d") //key 'd'
+      else if (actionName == "d")
       {
-        cleanObjects(&blocks_);
+        obj_proc_.cleanObjects();
+
         obj_proc_.triggerObjectDetection();
       }
-      //dd continuous object detection
-      else if (actionName == "dd") //key 'dd'
+      //continuous object detection
+      else if (actionName == "dd")
       {
         obj_proc_.cleanObjects(true);
 
@@ -368,23 +364,22 @@ namespace moveit_simple_actions
         if (verbose_)
           ROS_INFO_STREAM(obj_proc_.getAmountOfBlocks() << " objects detected");
       }
-      //------------ reaching all poses generated by moveit simple grasps
-      else if ((checkObj(block_id))&& (actionName == "plan")) //key 'action' //plan movement
+      //plan possible movement
+      else if ((checkObj(block_id)) && (actionName == "plan"))
       {
         //TODO: do not remove an object but allow a collision to it
         visual_tools_->cleanupCO(block->name_);
         action->graspPlan(block, support_surface_);
         resetBlock(block);
       }
-      //plan all movement
-      else if ((checkObj(block_id)) && (actionName == "a")) //key 'a'
+      //plan all possible movements
+      else if ((checkObj(block_id)) && (actionName == "a"))
       {
         //TODO: do not remove an object but allow a collision to it
         visual_tools_->cleanupCO(block->name_);
         action->graspPlanAllPossible(block, support_surface_);
         resetBlock(block);
       }
-      //------------ reaching the default pose
       //reaching based on default pose and grasp
       else if ((checkObj(block_id)) && (actionName == "u"))
       {
@@ -405,22 +400,22 @@ namespace moveit_simple_actions
         resetBlock(block);
       }
       //reach from top
-      else if ((checkObj(block_id)) && (actionName == "reachtop")) //key 'y'
+      else if ((checkObj(block_id)) && (actionName == "reachtop"))
       {
         //TODO: do not remove an object but allow a collision to it
         visual_tools_->cleanupCO(block->name_);
         geometry_msgs::Pose pose = block->pose_;
         pose.orientation.x = 0;
-        pose.position.z += block->size_x_*1.5; //0.12;
+        pose.position.z += block->size_x_*1.5;
         action->reachAction(pose, support_surface_);
         resetBlock(block);
-     }
+      }
       //pick an object without a grasp generator
-      else if ((checkObj(block_id)) && (actionName == "b")) //key 'b'
+      else if ((checkObj(block_id)) && (actionName == "b"))
       {
         action->pickDefault(block, support_surface_);
       }
-      //execute tha plan
+      //execute the planned movement
       else if ((checkObj(block_id)) && (actionName == "execute"))
       {
         action->executeAction();
@@ -438,17 +433,19 @@ namespace moveit_simple_actions
       //close hand
       else if (actionName == "close")
       {
-        action->poseHandOpen();
+        action->poseHandClose();
       }
       //process the next object
-      else if (actionName == "n") //key 'n'
+      else if (actionName == "n")
         ++block_id;
-      else if (actionName == "test_pick") //test the goal space for picking
+      //test the goal space for picking
+      else if (actionName == "test_pick")
       {
-        cleanObjects(&blocks_);
+        cleanObjects(&blocks_surfaces_, false);
+        obj_proc_.cleanObjects();
         evaluation_.testReach(nh_,
                               &pub_obj_pose_,
-                              &pub_obj_poses_,
+                              &obj_proc_.pub_obj_poses_,
                               &pub_obj_moveit_,
                               visual_tools_,
                               action_left_,
@@ -456,12 +453,13 @@ namespace moveit_simple_actions
                               &blocks_surfaces_,
                               true);
       }
-      else if (actionName == "test_reach") //test the goal space for reaching
+      //test the goal space for reaching
+      else if (actionName == "test_reach")
       {
-        cleanObjects(&blocks_);
+        obj_proc_.cleanObjects();
         evaluation_.testReach(nh_,
                               &pub_obj_pose_,
-                              &pub_obj_poses_,
+                              &obj_proc_.pub_obj_poses_,
                               &pub_obj_moveit_,
                               visual_tools_,
                               action_left_,
@@ -469,11 +467,17 @@ namespace moveit_simple_actions
                               &blocks_surfaces_,
                               false);
       }
-      else if (actionName == "set_table_height") // set table height
+      //set the table height
+      else if (actionName == "set_table_height")
       {
-        blocks_surfaces_.front().size_z_ = promptUserValue("give the table height");
-        blocks_surfaces_.front().pose_.position.z = floor_to_base_height_ + blocks_surfaces_.front().size_z_/2.0;
-        pub_obj_moveit_.publish(blocks_surfaces_.front().collObj_);
+        //TODO make a function
+        if (blocks_surfaces_.size() > 0)
+        {
+          blocks_surfaces_.back().size_z_ = promptUserValue("Set the table height to");
+          blocks_surfaces_.back().pose_.position.z =
+              floor_to_base_height_ + blocks_surfaces_.back().size_z_/2.0;
+          blocks_surfaces_.back().publishBlock(&current_scene_);
+        }
       }
       //clean the scene
       else if (actionName == "t")
@@ -499,74 +503,51 @@ namespace moveit_simple_actions
         }
       }
       //moving the virtual object down
-      else if ((actionName == "x") || (actionName == "down"))
+      else if (checkObj(block_id) && ((actionName == "x") || (actionName == "down")))
       {
-        if (blocks_.size() > 0)
-        {
-          geometry_msgs::Pose pose = block->pose_;
-          pose.position.z -= 0.05;
-          block->updatePose(pose);
-          resetBlock(block);
-        }
+        geometry_msgs::Pose pose(block->pose_);
+        pose.position.z -= 0.05;
+        block->updatePose(&current_scene_, pose);
       }
       //move the virtual object left
-      else if ((actionName == "s") || (actionName == "left"))
+      else if (checkObj(block_id) && ((actionName == "s") || (actionName == "left")))
       {
-        if (blocks_.size() > 0)
-        {
-          geometry_msgs::Pose pose = block->pose_;
-          pose.position.y -= 0.05;
-          block->updatePose(pose);
-          resetBlock(block);
-        }
+        geometry_msgs::Pose pose(block->pose_);
+        pose.position.y -= 0.05;
+        block->updatePose(&current_scene_, pose);
       }
       //move the virtual object up
-      else if ((actionName == "e") || (actionName == "up"))
+      else if (checkObj(block_id) && ((actionName == "e") || (actionName == "up")))
       {
-        if (blocks_.size() > 0)
-        {
-          geometry_msgs::Pose pose = block->pose_;
-          pose.position.z += 0.05;
-          block->updatePose(pose);
-          resetBlock(block);
-        }
+        geometry_msgs::Pose pose(block->pose_);
+        pose.position.z += 0.05;
+        block->updatePose(&current_scene_, pose);
       }
       //move the virtual object right
-      else if ((actionName == "f") || (actionName == "right"))
+      else if (checkObj(block_id) && ((actionName == "f") || (actionName == "right")))
       {
-        if (blocks_.size() > 0)
-        {
-          geometry_msgs::Pose pose = block->pose_;
-          pose.position.y += 0.05;
-          block->updatePose(pose);
-          resetBlock(block);
-        }
+        geometry_msgs::Pose pose(block->pose_);
+        pose.position.y += 0.05;
+        block->updatePose(&current_scene_, pose);
       }
       //move the virtual object farther
-      else if ((actionName == "c") || (actionName == "farther"))
+      else if (checkObj(block_id) && ((actionName == "c") || (actionName == "farther")))
       {
-        if (blocks_.size() > 0)
-        {
-          geometry_msgs::Pose pose = blocks_[0].pose_;
-          pose.position.x += 0.05;
-          blocks_[0].updatePose(pose);
-          resetBlock(block);
-        }
+        geometry_msgs::Pose pose(block->pose_);
+        pose.position.x += 0.05;
+        block->updatePose(&current_scene_, pose);
       }
       //move the virtual object closer
-      else if ((actionName == "r") || (actionName == "closer"))
+      else if (checkObj(block_id) && ((actionName == "r") || (actionName == "closer")))
       {
-        if (blocks_.size() > 0)
-        {
-          geometry_msgs::Pose pose = blocks_[0].pose_;
-          pose.position.x -= 0.05;
-          blocks_[0].updatePose(pose);
-          resetBlock(block);
-        }
+        geometry_msgs::Pose pose(block->pose_);
+        pose.position.x -= 0.05;
+        block->updatePose(&current_scene_, pose);
       }
       //set the tolerance
       else if (actionName == "j")
         action->setTolerance(promptUserValue("Set the value: "));
+      //switch the active arm
       else if (actionName == "h")
         switchArm(action);
       //move the head down

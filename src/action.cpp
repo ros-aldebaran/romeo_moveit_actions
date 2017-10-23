@@ -58,7 +58,6 @@ Action::Action(ros::NodeHandle *nh,
   move_group_->setPlanningTime(planning_time_);
   move_group_->setPlannerId(planner_id_);
   move_group_->setNumPlanningAttempts(4);
-  //move_group_->setNumPlanningAttempts(10);
   /*move_group_->setGoalPositionTolerance(0.1); //0.0001
   move_group_->setGoalOrientationTolerance(0.1); //0.001*/
 
@@ -320,6 +319,26 @@ void Action::setTolerance(const double value)
                     << move_group_->getGoalPositionTolerance());
 }
 
+void Action::releaseObject(MetaBlock *block)
+{
+  move_group_->detachObject(block->name_);
+
+  //remove the collision temporally
+  std::vector<std::string> objects;
+  objects.push_back(block->name_);
+  current_scene_.removeCollisionObjects(objects);
+
+  //go to the required pose
+  poseHand(2);
+  ros::Duration(1.0).sleep();
+  poseHandOpen();
+
+  //add the collision object back
+  std::vector<moveit_msgs::CollisionObject> coll_objects;
+  coll_objects.push_back(block->collObj_);
+  current_scene_.addCollisionObjects(coll_objects);
+}
+
 bool Action::setAllowedMoveItCollisionMatrix(moveit_msgs::AllowedCollisionMatrix& m)
 {
     moveit_msgs::PlanningScene planning_scene;
@@ -498,7 +517,6 @@ bool Action::reachAction(geometry_msgs::Pose pose_target,
   if (!move_group_)
     return false;
 
-  //moveit::planning_interface::MoveGroup::Plan plan;
   current_plan_.reset(new moveit::planning_interface::MoveGroup::Plan());
 
   // Prevent collision with table
@@ -778,7 +796,8 @@ bool Action::placeAction(MetaBlock *block,
   return success;
 }
 
-void Action::publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan, geometry_msgs::Pose pose_target)
+void Action::publishPlanInfo(moveit::planning_interface::MoveGroup::Plan plan,
+                             geometry_msgs::Pose pose_target)
 {
   // Get the last position of the trajectory plan and transform that joints values
   // into pose of end effector in /base_link frame

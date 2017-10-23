@@ -29,9 +29,11 @@
 namespace moveit_simple_actions
 {
 
+//! @brief Class for running the main pipeline.
 class SimplePickPlace
 {
 public:
+  //! @brief constructor
   SimplePickPlace(const std::string robot_name,
                   const double test_step,
                   const double x_min,
@@ -51,16 +53,16 @@ protected:
   //! @brief create a table object
   MetaBlock createTable();
 
-  //switch between the left and right arms
+  //! @brief switch between the left and right arms
   void switchArm(Action *action_now);
 
-  //create and publish an object
+  //! @brief create and publish an object
   void createObj(const MetaBlock &block);
 
-  //re-draw the object at new position
+  //! @brief publish the object at new position
   void resetBlock(MetaBlock *block);
 
-  //get collision objects from the topic /collision_object
+  //! @brief get collision objects from the topic /collision_object
   void getCollisionObjects(const moveit_msgs::CollisionObject::ConstPtr& msg);
 
   //! @brief clean the object list based on the timestamp
@@ -70,32 +72,34 @@ protected:
   //! @brief check if the block exists
   bool checkObj(int &block_id);
 
-  // A shared node handle
+  /** node handle */
   ros::NodeHandle nh_, nh_priv_;
 
-  //the robot's name
+  /** robot's name */
   std::string robot_name_;
 
+  /** verbosity */
   const bool verbose_;
 
-  //robot's base_frame
+  /** robot's base_frame */
   std::string base_frame_;
 
-  //the dimenssion x of a default object
+  /** dimenssion x of a default object */
   double block_size_x_;
-  //the dimenssion y of a default object
+
+  /** dimenssion y of a default object */
   double block_size_y_;
 
-  //the shift of the robot's base to teh floor
+  /** shift of the robot's base to the floor */
   double floor_to_base_height_;
 
   /** object processing */
   ObjProcessor obj_proc_;
 
-  //Evaluation of reaching/grasping
+  /** evaluation of reaching/grasping */
   Evaluation evaluation_;
 
-  //the state of re-drawing the world
+  /** state of re-drawing the world */
   bool env_shown_;
 
   //the working space of the robot
@@ -109,8 +113,11 @@ protected:
   /** name of the current support surface */
   std::string support_surface_;
 
-  //instances of an Action class for each arm
-  Action *action_left_, *action_right_;
+  /** instance of an Action class for the left arm */
+  Action *action_left_;
+
+  /** instance of an Action class for the right arm */
+  Action *action_right_;
 
   /** visual tools pointer used for scene visualization */
   moveit_visual_tools::MoveItVisualToolsPtr visual_tools_;
@@ -118,40 +125,31 @@ protected:
   /** current MoveIt scene */
   moveit::planning_interface::PlanningSceneInterface current_scene_;
 
-  //the set of available objects
-  std::vector<MetaBlock> blocks_;
-
-  //the set of available surfaces
+  /** set of available surfaces */
   std::vector<MetaBlock> blocks_surfaces_;
 
-  //the subscriber to get objects through the topic /collision_object
+  /** subscriber to get objects from /collision_object */
   ros::Subscriber sub_obj_coll_;
 
-  //the publisher of objects poses
-  ros::Publisher pub_obj_poses_;
-
-  //the publisher of the current object pose
+  /** publisher of the current object pose */
   ros::Publisher pub_obj_pose_;
 
-  //the current object position
+  /** current object position */
   geometry_msgs::PoseStamped msg_obj_pose_;
 
-  //all objects positions
-  geometry_msgs::PoseArray msg_obj_poses_;
-
-  //the default object pose for the left arm
+  /** default object pose for the left arm */
   geometry_msgs::Pose pose_default_;
 
-  //the default object pose for the right arm
+  /** default object pose for the right arm */
   geometry_msgs::Pose pose_default_r_;
 
-  //the default object pose at zero
+  /** default object pose at zero */
   geometry_msgs::Pose pose_zero_;
 
-  //all successfully reached positions
+  /** all successfully reached positions */
   std::vector <geometry_msgs::Pose> stat_poses_success_;
 
-  //publisher of the collision objects to the topic /collision_world
+  /** publisher of collision objects to /collision_world */
   ros::Publisher pub_obj_moveit_;
 
   /** processing rate */
