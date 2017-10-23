@@ -28,7 +28,8 @@ namespace moveit_simple_actions
 
 Action::Action(ros::NodeHandle *nh,
                const std::string &arm,
-               const std::string &robot_name):
+               const std::string &robot_name,
+               const std::string &base_frame):
   verbose_(false),
   attempts_max_(3),
   planning_time_(20.0), //=5 in GUI
@@ -38,12 +39,12 @@ Action::Action(ros::NodeHandle *nh,
   max_velocity_scaling_factor_(1.0), //=1.0 in GUI
   dist_th_(0.08f),
   flag_(FLAG_MOVE),
-  arm_(arm),
   end_eff_(arm+"_hand"),
   plan_group_(arm+"_arm"),
-  posture_(robot_name, end_eff_, plan_group_)
+  posture_(robot_name, end_eff_, plan_group_),
+  base_frame_(base_frame)
 {
-  /*ROS_INFO_STREAM("Arm: " << arm_);
+  /* ROS_INFO_STREAM(<< "Planning group: " << plan_group_
   ROS_INFO_STREAM("End Effector: " << end_eff_);
   ROS_INFO_STREAM("Planning Group: " << plan_group_);*/
 
@@ -98,7 +99,6 @@ Action::Action(ros::NodeHandle *nh,
   simple_grasps_.reset(new moveit_simple_grasps::SimpleGrasps(moveit_visual_tools::MoveItVisualToolsPtr()));
 
   pub_obj_pose_ = nh->advertise<geometry_msgs::PoseStamped>("/pose_target", 10);
-  pub_obj_poses_ = nh->advertise<geometry_msgs::PoseStamped>("/pose_targets", 10);
 
   pub_plan_pose_ = nh->advertise<geometry_msgs::PoseStamped>("/pose_plan", 10);
   pub_plan_traj_ = nh->advertise<moveit_msgs::RobotTrajectory>("/trajectory", 10);
@@ -249,9 +249,46 @@ bool Action::graspPlan(MetaBlock *block, const std::string surface_name)
   return success;
 }
 
-float computeDistance(geometry_msgs::Pose goal,
-                      geometry_msgs::Pose current)
+geometry_msgs::PoseStamped Action::getGraspPose(MetaBlock *block)
 {
+  geometry_msgs::PoseStamped goal;
+  goal.header.stamp = ros::Time::now();
+
+  if (block->base_frame_ == base_frame_)
+  {
+    goal.header.frame_id = block->base_frame_;
+    goal.pose = block->pose_;
+    goal.pose.position.x += grasp_data_.grasp_pose_to_eef_pose_.position.x;
+    goal.pose.position.y += grasp_data_.grasp_pose_to_eef_pose_.position.y;
+    goal.pose.position.z -= grasp_data_.grasp_pose_to_eef_pose_.position.z;
+
+    goal.pose.orientation = grasp_data_.grasp_pose_to_eef_pose_.orientation;
+  }
+  else
+  {
+    geometry_msgs::PoseStamped pose_transform = block->getTransformed(&listener_, base_frame_);
+    goal.header.frame_id = base_frame_;
+
+    goal.pose = pose_transform.pose;
+    goal.pose.position.x += grasp_data_.grasp_pose_to_eef_pose_.position.x;
+    goal.pose.position.y += grasp_data_.grasp_pose_to_eef_pose_.position.y;
+    goal.pose.position.z += grasp_data_.grasp_pose_to_eef_pose_.position.z;
+  }
+  return goal;
+}
+
+float Action::computeDistance(MetaBlock *block)
+{
+  geometry_msgs::PoseStamped goal = getGraspPose(block);
+
+  float dist = computeDistance(goal.pose);
+
+  return dist;
+}
+
+float Action::computeDistance(geometry_msgs::Pose goal)
+{
+  geometry_msgs::Pose current(move_group_->getCurrentPose().pose);
   float dist = sqrt((goal.position.x - current.position.x)
                     * (goal.position.x - current.position.x)
                     + (goal.position.y - current.position.y)
@@ -297,8 +334,6 @@ geometry_msgs::Pose Action::getPose()
   pose_now.header.frame_id = grasp_data_.base_link_;
 
   pose_now.pose = move_group_->getCurrentPose().pose;
-
-  //ROS_INFO_STREAM("current pose is " << pose_now);
 
   pose_now.pose.position.x -= grasp_data_.grasp_pose_to_eef_pose_.position.x;
   pose_now.pose.position.y -= grasp_data_.grasp_pose_to_eef_pose_.position.y;
@@ -435,11 +470,11 @@ void Action::updateCollisionMatrix(const std::string& name)
   setAllowedMoveItCollisionMatrix(m);
 }
 
-float Action::reachGrasp(MetaBlock *block,
-                         const std::string surface_name,
-                         int attempts_nbr,
-                         float tolerance_min,
-                         double planning_time)
+bool Action::reachGrasp(MetaBlock *block,
+                        const std::string surface_name,
+                        int attempts_nbr,
+                        float tolerance_min,
+                        double planning_time)
 {
   bool success(false);
 
@@ -458,22 +493,22 @@ float Action::reachGrasp(MetaBlock *block,
   if (tolerance_min == 0.0)
     tolerance_min = tolerance_min_;
 
+  move_group_->setGoalTolerance(tolerance_min);
+  move_group_->setPlanningTime(planning_time);
+
   updateCollisionMatrix(block->name_);
 
-  //clean object temporally or allow to touch it
-  /*visual_tools_->cleanupCO(block->name);
-  ros::Duration(1.0).sleep();*/
-
-  geometry_msgs::Pose pose = block->pose_;
-  pose.position.z += block->size_y_/2.0;
+  geometry_msgs::PoseStamped pose = getGraspPose(block);
+  ros::Duration(1.0).sleep();
 
   //reach the object
-  if (!reachPregrasp(pose, surface_name))
-    return std::numeric_limits<float>::max();
+  if (!reachAction(pose, surface_name, attempts_nbr))
+    return false;
 
-  //compute the distance to teh object
-  float dist = computeDistance(move_group_->getCurrentPose().pose,
-                               move_group_->getPoseTarget().pose);
+  sleep(8.0);
+
+  //compute the distance to the object
+  float dist = computeDistance(pose.pose);
   if (verbose_)
     ROS_INFO_STREAM("Reached at distance = " << dist);
 
@@ -491,21 +526,14 @@ float Action::reachGrasp(MetaBlock *block,
     object_attached_ = block->name_;
   }
 
-  return dist;
+  //if (verbose_)
+    ROS_INFO_STREAM("Distance to the object= " << dist
+                    << "; is grasped=" << success);
+
+  return success;
 }
 
-bool Action::reachPregrasp(geometry_msgs::Pose pose_target,
-                           const std::string surface_name)
-{
-  pose_target.position.x += grasp_data_.grasp_pose_to_eef_pose_.position.x;
-  pose_target.position.y += grasp_data_.grasp_pose_to_eef_pose_.position.y;
-  pose_target.position.z += grasp_data_.grasp_pose_to_eef_pose_.position.z;
-  pose_target.orientation = grasp_data_.grasp_pose_to_eef_pose_.orientation;
-
-  return reachAction(pose_target, surface_name);
-}
-
-bool Action::reachAction(geometry_msgs::Pose pose_target,
+bool Action::reachAction(geometry_msgs::PoseStamped pose_target,
                          const std::string surface_name,
                          const int attempts_nbr)
 {
@@ -530,7 +558,7 @@ bool Action::reachAction(geometry_msgs::Pose pose_target,
   pub_obj_pose_.publish(pose_target);
 
   move_group_->setMaxVelocityScalingFactor(max_velocity_scaling_factor_); //TODO back
-  //move_group_->setNumPlanningAttempts(50); //Seems to not improve the results
+  move_group_->setNumPlanningAttempts(10); //Seems to not improve the results
   double tolerance = tolerance_min_;
   int attempts = 0;
 
@@ -565,9 +593,10 @@ bool Action::reachAction(geometry_msgs::Pose pose_target,
 
   if (success)
   {
-    publishPlanInfo(*current_plan_, pose_target);
+    //publishPlanInfo(*current_plan_, pose_target.pose);
     success = executeAction();
-  }else
+  }
+  else
     current_plan_.reset();
 
   return success;

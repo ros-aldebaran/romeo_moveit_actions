@@ -63,7 +63,7 @@ namespace moveit_simple_actions
       nh_priv_(""),
       robot_name_(robot_name),
       verbose_(verbose),
-      base_frame_("odom"),
+      base_frame_("base_link"),
       block_size_x_(0.03),
       block_size_y_(0.13),
       floor_to_base_height_(-1.0),
@@ -130,8 +130,8 @@ namespace moveit_simple_actions
     visual_tools_->removeAllCollisionObjects();
     ros::Duration(1.0).sleep();
 
-    action_left_ = new Action(&nh_, left_arm_name, robot_name_);
-    action_right_ = new Action(&nh_, right_arm_name, robot_name_);
+    action_left_ = new Action(&nh_, left_arm_name, robot_name_, base_frame_);
+    action_right_ = new Action(&nh_, right_arm_name, robot_name_, base_frame_);
     action_left_->initVisualTools(visual_tools_);
     action_right_->initVisualTools(visual_tools_);
 
@@ -184,12 +184,12 @@ namespace moveit_simple_actions
 
   void SimplePickPlace::switchArm(Action *action)
   {
-    if (action->arm_.find("left") != std::string::npos)
+    if (action->plan_group_.find("left") != std::string::npos)
       action = action_right_;
     else
       action = action_left_;
 
-    ROS_INFO_STREAM("Switching the active arm to " << action->arm_);
+    ROS_INFO_STREAM("Switching the active arm to " << action->plan_group_);
     sleep(2.0);
   }
 
@@ -232,6 +232,13 @@ namespace moveit_simple_actions
     std::string actionName = "";
     MetaBlock *block;
 
+    // Release the object if any
+    if (checkObj(block_id))
+    {
+      block = obj_proc_.getBlock(block_id);
+      action->releaseObject(block);
+    }
+
     //the main loop
     while(ros::ok())
     {
@@ -270,7 +277,7 @@ namespace moveit_simple_actions
       actionName = promptUserQuestionString();
       ROS_INFO_STREAM("Action chosen '" << actionName
                       << "' object_id=" << block_id
-                      << " the arm active=" << action->arm_);
+                      << " the arm active=" << action->plan_group_);
       // Pick the object with a grasp generator
       if ((checkObj(block_id)) && (actionName == "g"))
       {
@@ -303,7 +310,7 @@ namespace moveit_simple_actions
         if (checkObj(block_id))
           action->releaseObject(block);
         else
-          action->poseHand(1);
+          action->poseHand(2);
       }
       //return the hand to the initial pose
       else if ((actionName.length() == 3) || (actionName.compare(0,1,"i") == 0))
@@ -383,22 +390,19 @@ namespace moveit_simple_actions
       //reaching based on default pose and grasp
       else if ((checkObj(block_id)) && (actionName == "u"))
       {
-        float dist = action->reachGrasp(block, support_surface_);
-        //if not succeded then try with another arm
-        if(dist > 10)
-        {
-          switchArm(action);
-          dist = action->reachGrasp(block, support_surface_);
-        }
+        action->reachGrasp(block, support_surface_, 1, 0.015, 50.0);
       }
       //reach from top
       else if ((checkObj(block_id)) && (actionName == "reachtop"))
       {
         //TODO: do not remove an object but allow a collision to it
         visual_tools_->cleanupCO(block->name_);
-        geometry_msgs::Pose pose = block->pose_;
-        pose.orientation.x = 0;
-        pose.position.z += block->size_x_*1.5;
+        geometry_msgs::PoseStamped pose;
+        pose.header.frame_id = block->base_frame_;
+        pose.header.stamp = ros::Time::now();
+        pose.pose = block->pose_;
+        pose.pose.orientation.x = 0;
+        pose.pose.position.z += block->size_x_*1.5;
         action->reachAction(pose, support_surface_);
         resetBlock(block);
       }

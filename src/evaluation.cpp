@@ -234,7 +234,7 @@ int Evaluation::testReachWithGenSingleHand(Action *action,
   //Set the test space params
   double y_step = test_step_*1.5;
   double y_min(y_min_), y_max(y_max_);
-  if (action->arm_ == "right")
+  if (action->plan_group_.find("right") != std::string::npos)
   {
     y_min = -y_max_;
     y_max = -y_min_;
@@ -276,10 +276,18 @@ int Evaluation::testReachWithGenSingleHand(Action *action,
 
         bool success(false);
         if (pickVsReach)
-          success = action->pickAction(&block, table_->name_, attempts_nbr, planning_time);
+        {
+          success = action->pickAction(&block,
+                                       table_->name_,
+                                       attempts_nbr,
+                                       planning_time);
+        }
         else
         {
-          success = action->reachPregrasp(block.pose_, "");
+          success = action->reachGrasp(&block,
+                                       table_->name_,
+                                       attempts_nbr,
+                                       planning_time);
         }
         if (success)
         {

@@ -50,7 +50,8 @@ public:
   //! @brief constructor
   Action(ros::NodeHandle *nh,
          const std::string &arm,
-         const std::string &robot_name);
+         const std::string &robot_name,
+         const std::string &base_frame);
 
   //! @brief initialize the visual tools
   void initVisualTools(moveit_visual_tools::MoveItVisualToolsPtr &visual_tools);
@@ -81,18 +82,14 @@ public:
   bool executeAction();
 
   //! @brief reach default grasping pose
-  float reachGrasp(MetaBlock *block,
-                   const std::string surface_name,
+  bool reachGrasp(MetaBlock *block,
+                  const std::string surface_name,
                   int attempts_nbr=0,
                   float tolerance_min=0.0f,
                   double planning_time=0.0);
 
-  //reaching the pre-grasp pose
-  bool reachPregrasp(geometry_msgs::Pose pose_target,
-                     const std::string surface_name);
-
   //! @brief reach the top of an object
-  bool reachAction(geometry_msgs::Pose pose_target,
+  bool reachAction(geometry_msgs::PoseStamped pose_target,
                    const std::string surface_name="",
                    const int attempts_nbr=1);
 
@@ -123,11 +120,17 @@ public:
   //! @brief get the base_link
   std::string getBaseLink();
 
+  //! @brief compute the distance to the object
+  float computeDistance(MetaBlock *block);
+
+  //! @brief compute the distance to the pose
+  float computeDistance(geometry_msgs::Pose goal);
+
+  //! @brief get the grasping pose for the object pose
+  geometry_msgs::PoseStamped getGraspPose(MetaBlock *block);
+
   //! @brief release the object
   void releaseObject(MetaBlock *block);
-
-  /** current arm name */
-  const std::string arm_;
 
   /** name of the planning group */
   const std::string plan_group_;
@@ -212,11 +215,8 @@ private:
   /** the current MoveIt scene */
   moveit::planning_interface::PlanningSceneInterface current_scene_;
 
-  /** publisher for object poses */
+  /** publisher for a pre-grasp pose */
   ros::Publisher pub_obj_pose_;
-
-  /** publisher for objects poses */
-  ros::Publisher pub_obj_poses_;
 
   /** publish final pose */
   ros::Publisher pub_plan_pose_;
@@ -257,6 +257,9 @@ private:
   /** the current attached object */
   std::string object_attached_;
 
+  /** the transform listener */
+  tf::TransformListener listener_;
+
   /** client get scene difference */
   ros::Publisher planning_scene_publisher_;
 
@@ -265,6 +268,9 @@ private:
 
   /** allowed collision links */
   std::vector<std::string> allowedCollisionLinks_;
+
+  /** base frame */
+  std::string base_frame_;
 };
 }
 #endif // ACTION_HPP
