@@ -11,6 +11,13 @@ It offers a set of functionalities, like:
       * virtual objects: add, move, remove,
       * detect objects with the robot's sensors: call ORK Linemod object recognition.
 
+Documentation
+=============
+
+To compile the documentation, please run
+
+* rosdoc_lite <path_to_package>
+
 Installation
 ============
 
