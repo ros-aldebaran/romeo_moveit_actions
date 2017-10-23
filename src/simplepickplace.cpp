@@ -173,8 +173,6 @@ namespace moveit_simple_actions
                      x_min_, x_max_, y_min_, y_max_, z_min_, z_max_);
 
     printTutorial(robot_name);
-
-    startRoutine();
   }
 
 
@@ -205,7 +203,7 @@ namespace moveit_simple_actions
       false;
   }
 
-  bool SimplePickPlace::startRoutine()
+  void SimplePickPlace::run()
   {
     int block_id = -1;
     int hand_id = 0; //0: any, 1: left, 2:right
@@ -599,10 +597,9 @@ namespace moveit_simple_actions
         evaluation_.printStat();
       }
 
-     if (actionName == "q")
+      if (actionName == "q")
         break;
     }
-    return true;
   }
 
   //clean the object list based on the timestamp

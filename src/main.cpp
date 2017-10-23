@@ -129,12 +129,22 @@ int main(int argc, char **argv)
   srand (time(NULL));
 
   // Start the pick place node
-  moveit_simple_actions::SimplePickPlace server_pickplace(robot_name, test_step,
-                                           x_min, x_max, y_min, y_max, z_min, z_max,
-                                           left_arm_name, right_arm_name,
-                                           verbose);
+  moveit_simple_actions::SimplePickPlace server_pickplace(robot_name,
+                                                          test_step,
+                                                          x_min,
+                                                          x_max,
+                                                          y_min,
+                                                          y_max,
+                                                          z_min,
+                                                          z_max,
+                                                          left_arm_name,
+                                                          right_arm_name,
+                                                          verbose);
 
-  ROS_INFO_STREAM_NAMED("main", "Shutting down.");
+  server_pickplace.run();
+
+  ROS_INFO_STREAM_NAMED("moveit_simple_action", "Shutting down.");
+  spinner.stop();
   ros::shutdown();
 
   return 0;

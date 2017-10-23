@@ -44,10 +44,10 @@ public:
                   const std::string right_arm_name,
                   const bool verbose);
 
-protected:
-  //main cycle
-  bool startRoutine();
+  //! @brief main cycle
+  void run();
 
+protected:
   //! @brief create a table object
   MetaBlock createTable();
 
