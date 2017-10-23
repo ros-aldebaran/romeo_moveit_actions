@@ -391,14 +391,6 @@ namespace moveit_simple_actions
           dist = action->reachGrasp(block, support_surface_);
         }
       }
-      //moving the virtual object down
-      else if ((checkObj(block_id)) && (actionName == "pregrasp"))
-      {
-        //TODO: do not remove an object but allow a collision to it
-        visual_tools_->cleanupCO(block->name_);
-        action->reachPregrasp(block->pose_, support_surface_);
-        resetBlock(block);
-      }
       //reach from top
       else if ((checkObj(block_id)) && (actionName == "reachtop"))
       {
@@ -421,22 +413,22 @@ namespace moveit_simple_actions
         action->executeAction();
       }
       //print the current pose
-      else if (actionName == "v")
+      else if (actionName == "get_pose")
       {
         action->getPose();
       }
       //open hand
-      else if (actionName == "open")
+      else if (actionName == "hand_open")
       {
         action->poseHandOpen();
       }
       //close hand
-      else if (actionName == "close")
+      else if (actionName == "hand_close")
       {
         action->poseHandClose();
       }
       //process the next object
-      else if (actionName == "n")
+      else if (actionName == "next_obj")
         ++block_id;
       //test the goal space for picking
       else if (actionName == "test_pick")
@@ -480,7 +472,7 @@ namespace moveit_simple_actions
         }
       }
       //clean the scene
-      else if (actionName == "t")
+      else if (actionName == "table")
       {
         if (env_shown_)
         {
@@ -548,13 +540,13 @@ namespace moveit_simple_actions
       else if (actionName == "j")
         action->setTolerance(promptUserValue("Set the value: "));
       //switch the active arm
-      else if (actionName == "h")
+      else if (actionName == "switcharm")
         switchArm(action);
       //move the head down
-      else if (actionName == "m")
+      else if (actionName == "look_down")
         action->poseHeadDown();
       //move the head to zero
-      else if (actionName == "k")
+      else if (actionName == "look_zero")
         action->poseHeadZero();
       //print the statistics on grasps
       else if (actionName == "stat")
