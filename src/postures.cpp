@@ -62,7 +62,7 @@ Posture::Posture(const std::string robot_name,
     if (pose_arm_[1].size() >= 6)
     {
       if (robot_name == "romeo")
-        pose_arm_[1][5] = 0.59;
+        pose_arm_[1][5] = 0.17;
       else
         pose_arm_[1][5] = 0.02;
     }
