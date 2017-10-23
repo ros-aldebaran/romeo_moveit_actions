@@ -29,9 +29,10 @@ namespace moveit_simple_actions
 class Evaluation
 {
 public:
-
+  //! @brief constructor
   Evaluation(const bool &verbose, const std::string &base_frame);
 
+  //! @brief initialization
   void init(const double &test_step,
             const double &block_size_x,
             const double &block_size_y,
@@ -43,6 +44,7 @@ public:
             const double &z_min,
             const double &z_max);
 
+  //! @brief testing grasping or approximate grasping
   void testReach(ros::NodeHandle &nh,
                  ros::Publisher *pub_obj_pose,
                  ros::Publisher *pub_obj_poses,
@@ -54,6 +56,7 @@ public:
                  const bool pickVsReach,
                  const bool test_poses_rnd=false);
 
+  //! @brief printing the successfully reached positions
   void printStat();
 
   //! @brief checking if the pose is within the working space (close enough)
@@ -63,10 +66,13 @@ public:
                    const bool z=true);
 
 protected:
+  //! @brief generating test poses in a regular maner
   geometry_msgs::PoseArray generatePosesGrid();
 
+  //! @brief generating poses in a random maner
   geometry_msgs::PoseArray generatePosesRnd(const int poses_nbr);
 
+  //! @brief testing a single hand
   int testReachWithGenSingleHand(Action *action,
                                  std::vector<MetaBlock> *blocks_surfaces,
                                  ros::Publisher *pub_obj_pose,
@@ -78,12 +84,13 @@ protected:
                                  const double planning_time,
                                  geometry_msgs::PoseArray &msg_poses_validated);
 
+  /** verbose or not */
   bool verbose_;
 
-  //robot's base_frame
+  /** robot's base_frame */
   std::string base_frame_;
 
-  //the interval to test the working space
+  /** step for testing the working space */
   double test_step_;
 
   /** size X of a default object */
@@ -95,17 +102,28 @@ protected:
   /** shift of the robot's base to the floor */
   double floor_to_base_height_;
 
-  //the working space of the robot
-  double x_min_;
-  double x_max_;
-  double y_min_;
-  double y_max_;
-  double z_min_;
-  double z_max_;
+  /** working space in X dim min */
+  float x_min_;
 
+  /** working space in X dim max */
+  float x_max_;
+
+  /** working space in Y dim min */
+  float y_min_;
+
+  /** working space in Y dim max */
+  float y_max_;
+
+  /** working space in Z dim min */
+  float z_min_;
+
+  /** working space in Z dim max */
+  float z_max_;
+
+  /** default zero pose */
   geometry_msgs::Pose pose_zero_;
 
-  //successfully reached positions
+  /** successfully reached target poses */
   std::vector <geometry_msgs::Pose> stat_poses_success_;
 
   /** default object to grasp */

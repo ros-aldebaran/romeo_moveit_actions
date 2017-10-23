@@ -23,7 +23,7 @@
 
 namespace moveit_simple_actions
 {
-//! @brief Class for posture processing
+//! @brief Class for the robot's posture processing.
 class Posture
 {
 public:

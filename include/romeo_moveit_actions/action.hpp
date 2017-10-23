@@ -43,7 +43,7 @@
 namespace moveit_simple_actions
 {
 
-//! @brief Class allows motion planning based on move_group.
+//! @brief Class for motion planning based on move_group.
 class Action
 {
 public:
@@ -123,10 +123,10 @@ public:
   //! @brief get the base_link
   std::string getBaseLink();
 
-  //the current arm name
+  /** current arm name */
   const std::string arm_;
 
-  //the name of planning group
+  /** name of the planning group */
   const std::string plan_group_;
 
 private:
